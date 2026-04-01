@@ -25,4 +25,26 @@ export class SupabaseService {
   getAdminClient(): SupabaseClient {
     return this.adminClient;
   }
+
+  async uploadImage(file: any): Promise<string> {
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    // Si le bucket s'appelle 'events', on y place le fichier
+    const { data, error } = await this.adminClient.storage
+      .from('events')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (error) {
+      throw new Error(`Erreur lors de l'upload Supabase: ${error.message}`);
+    }
+
+    const { data: publicData } = this.adminClient.storage
+      .from('events')
+      .getPublicUrl(fileName);
+
+    return publicData.publicUrl;
+  }
 }

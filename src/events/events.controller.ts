@@ -1,17 +1,22 @@
 import {
-  Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards,
+  Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile, BadRequestException
 } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam,
+  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiConsumes, ApiBody
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { EventsService } from './events.service';
+import { SupabaseService } from '../supabase.service';
 import { CreateEventDto, UpdateEventDto } from './dto/event.dto';
 
 @ApiTags('Events')
 @Controller('events')
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(
+     private readonly eventsService: EventsService,
+     private readonly supabaseService: SupabaseService
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Lister tous les événements', description: 'Retourne la liste complète des événements triés par date.' })
@@ -44,6 +49,31 @@ export class EventsController {
   @ApiResponse({ status: 200, description: 'Statistiques des tickets.', schema: { example: { total: 45, validé: 30, utilisé: 10, annulé: 3, soumis: 2 } } })
   getStats(@Param('id') id: string) {
     return this.eventsService.getStats(id);
+  }
+
+  @Post('upload')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] Upload une image d\'événement' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadImage(@UploadedFile() file: any) {
+    if (!file) {
+      throw new BadRequestException('Aucun fichier fourni');
+    }
+    const imageUrl = await this.supabaseService.uploadImage(file);
+    return { imageUrl };
   }
 
   @Post()

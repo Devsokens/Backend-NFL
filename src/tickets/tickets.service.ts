@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, InternalServerErrorException,
+  Injectable, NotFoundException, InternalServerErrorException, ConflictException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
 import { CreateTicketDto, UpdateTicketStatusDto } from './dto/ticket.dto';
@@ -131,6 +131,20 @@ export class TicketsService {
       .single();
     if (evErr || !event) throw new NotFoundException('Événement introuvable');
 
+    // Anti-fraude : Vérifier si cet email a déjà une réservation pour cet événement
+    const { data: existing, error: checkErr } = await this.supabase
+      .getClient()
+      .from('tickets')
+      .select('id')
+      .eq('event_id', dto.event_id)
+      .eq('email', dto.email)
+      .not('status', 'eq', 'annulé') // On autorise si l'ancienne a été annulée
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      throw new ConflictException('Cet email est déjà enregistré pour cet événement.');
+    }
+
     const ticketId = `NFL-${uuidv4().split('-')[0].toUpperCase()}`;
     const qrData = JSON.stringify({ ticketId, eventId: dto.event_id, email: dto.email });
 
@@ -214,7 +228,8 @@ export class TicketsService {
         );
       } catch (err) {
         console.error("Erreur lors de la génération/envoi du ticket validé :", err);
-        // On continue la mise à jour même si le mail échoue (on pourra le suivre dans les logs)
+        // On remonte l'erreur pour que l'admin sache que l'email n'est pas parti
+        throw new InternalServerErrorException(`Billet généré mais échec de l'envoi d'email : ${err.message}`);
       }
     }
 
