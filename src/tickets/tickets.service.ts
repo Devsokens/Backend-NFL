@@ -133,19 +133,8 @@ export class TicketsService {
 
     const ticketId = `NFL-${uuidv4().split('-')[0].toUpperCase()}`;
     const qrData = JSON.stringify({ ticketId, eventId: dto.event_id, email: dto.email });
-    const qrCodeDataUrl = await QRCode.toDataURL(qrData, { width: 200 });
 
-    // Generate PDF
-    const pdfBuffer = await this.generatePDF(
-      dto.full_name,
-      event.title,
-      event.date,
-      event.location,
-      ticketId,
-      qrCodeDataUrl,
-    );
-
-    // Save ticket to Supabase
+    // Save ticket to Supabase (PDF & Email will be sent later on validation)
     const { data: ticket, error } = await this.supabase
       .getAdminClient()
       .from('tickets')
@@ -154,17 +143,7 @@ export class TicketsService {
       .single();
     if (error) throw new InternalServerErrorException(error.message);
 
-    // Send email
-    try {
-      await this.sendEmailWithTicket(
-        dto.email, dto.full_name, event.title, event.date,
-        event.location, ticketId, qrCodeDataUrl, pdfBuffer,
-      );
-    } catch (emailErr) {
-      console.error('Email send error:', emailErr);
-    }
-
-    return { ...ticket, message: 'Ticket créé et envoyé par email avec succès' };
+    return { ...ticket, message: 'Ticket créé et sauvegardé avec succès (en attente de paiement)' };
   }
 
   async findAll() {
@@ -200,7 +179,45 @@ export class TicketsService {
   }
 
   async updateStatus(id: string, dto: UpdateTicketStatusDto) {
-    await this.findOne(id);
+    const existingTicket = await this.findOne(id);
+    
+    // Si passage au statut "validé" et que l'ancien statut ne l'était pas
+    if (dto.status === 'validé' && existingTicket.status !== 'validé') {
+      try {
+        const qrData = existingTicket.qr_code_data;
+        // Reconstruct ticketId from qrData if possible or just use a fallback
+        let parsedQr: any = {};
+        try { parsedQr = JSON.parse(qrData); } catch (e) {}
+        const ticketId = parsedQr.ticketId || id.split('-')[0].toUpperCase();
+        
+        const qrCodeDataUrl = await QRCode.toDataURL(qrData, { width: 200 });
+        
+        const event = existingTicket.events;
+        const pdfBuffer = await this.generatePDF(
+          existingTicket.full_name,
+          event.title,
+          event.date,
+          event.location,
+          ticketId,
+          qrCodeDataUrl,
+        );
+
+        await this.sendEmailWithTicket(
+          existingTicket.email,
+          existingTicket.full_name,
+          event.title,
+          event.date,
+          event.location,
+          ticketId,
+          qrCodeDataUrl,
+          pdfBuffer,
+        );
+      } catch (err) {
+        console.error("Erreur lors de la génération/envoi du ticket validé :", err);
+        // On continue la mise à jour même si le mail échoue (on pourra le suivre dans les logs)
+      }
+    }
+
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('tickets')
