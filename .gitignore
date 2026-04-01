@@ -1,0 +1,14 @@
+# nest.js
+node_modules
+dist
+.env
+*.log
+
+# environment variables
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
