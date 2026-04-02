@@ -17,7 +17,9 @@ export class EventsService {
     if (error) throw new InternalServerErrorException(error.message);
     return data.map((event: any) => ({
       ...event,
-      ticketsSold: event.tickets?.filter((t: any) => t.status === 'validé' || t.status === 'utilisé').length || 0,
+      ticketsSold: event.tickets?.filter((t: any) => 
+        ['validé', 'validated', 'utilisé', 'used', 'confirmed', 'confirmé'].includes(t.status)
+      ).length || 0,
     }));
   }
 
@@ -32,7 +34,9 @@ export class EventsService {
     if (error) throw new InternalServerErrorException(error.message);
     return data.map((event: any) => ({
       ...event,
-      ticketsSold: event.tickets?.filter((t: any) => t.status === 'validé' || t.status === 'utilisé').length || 0,
+      ticketsSold: event.tickets?.filter((t: any) => 
+        ['validé', 'validated', 'utilisé', 'used', 'confirmed', 'confirmé'].includes(t.status)
+      ).length || 0,
     }));
   }
 
