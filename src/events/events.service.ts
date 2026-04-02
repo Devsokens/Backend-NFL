@@ -12,10 +12,13 @@ export class EventsService {
     const { data, error } = await this.supabase
       .getClient()
       .from('events')
-      .select('*')
+      .select('*, tickets(status)')
       .order('date', { ascending: true });
     if (error) throw new InternalServerErrorException(error.message);
-    return data;
+    return data.map((event: any) => ({
+      ...event,
+      ticketsSold: event.tickets?.filter((t: any) => t.status === 'validé' || t.status === 'utilisé').length || 0,
+    }));
   }
 
   async findUpcoming() {
@@ -23,11 +26,14 @@ export class EventsService {
     const { data, error } = await this.supabase
       .getClient()
       .from('events')
-      .select('*')
+      .select('*, tickets(status)')
       .gte('date', today)
       .order('date', { ascending: true });
     if (error) throw new InternalServerErrorException(error.message);
-    return data;
+    return data.map((event: any) => ({
+      ...event,
+      ticketsSold: event.tickets?.filter((t: any) => t.status === 'validé' || t.status === 'utilisé').length || 0,
+    }));
   }
 
   async findOne(id: string) {
@@ -38,7 +44,10 @@ export class EventsService {
       .eq('id', id)
       .single();
     if (error || !data) throw new NotFoundException(`Événement #${id} introuvable`);
-    return data;
+    return {
+      ...data,
+      ticketsSold: data.tickets?.filter((t: any) => t.status === 'validé' || t.status === 'utilisé').length || 0,
+    };
   }
 
   async create(dto: CreateEventDto) {
