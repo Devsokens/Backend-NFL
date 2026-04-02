@@ -7,6 +7,8 @@ import * as QRCode from 'qrcode';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class TicketsService {
@@ -74,38 +76,75 @@ export class TicketsService {
     fullName: string,
     eventTitle: string,
     eventDate: string,
+    eventTime: string,
     eventLocation: string,
+    eventPrice: number | string,
     ticketId: string,
     qrCodeDataUrl: string,
   ): Promise<Buffer> {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 250]);
     const { width, height } = page.getSize();
-
+ 
+    // Fond sombre
     page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.196, 0.078, 0.047) });
+    // Découpe
     page.drawRectangle({ x: 0, y: 0, width: width * 0.65, height, color: rgb(0.224, 0.098, 0.059) });
-
+ 
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const gold = rgb(0.784, 0.616, 0.31);
     const white = rgb(1, 1, 1);
     const lightGray = rgb(0.8, 0.8, 0.8);
-
-    page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 40, size: 14, font: boldFont, color: gold });
+ 
+    // Intégration du LOGO
+    try {
+      const logoPath = path.join(process.cwd(), '../nfl-tickets/src/assets/Logo_NFL_fond_marron-removebg-preview.png');
+      if (fs.existsSync(logoPath)) {
+        const logoBuffer = fs.readFileSync(logoPath);
+        const logoImage = await pdfDoc.embedPng(logoBuffer);
+        const logoDims = logoImage.scale(0.15); // Réduire la taille du logo
+        page.drawImage(logoImage, {
+          x: 24,
+          y: height - logoDims.height - 15,
+          width: logoDims.width,
+          height: logoDims.height,
+        });
+      } else {
+        // Fallback texte si logo non trouvé
+        page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 40, size: 14, font: boldFont, color: gold });
+      }
+    } catch (e) {
+      console.warn("Impossible de charger le logo PDF:", e.message);
+      page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 40, size: 14, font: boldFont, color: gold });
+    }
+ 
     page.drawText('BILLET D\'ENTRÉE', { x: 24, y: height - 58, size: 9, font: regularFont, color: lightGray });
-
+ 
     page.drawLine({ start: { x: 24, y: height - 68 }, end: { x: width * 0.62, y: height - 68 }, thickness: 1, color: gold, opacity: 0.4 });
-
+ 
+    // Événement
     page.drawText(eventTitle, { x: 24, y: height - 92, size: 16, font: boldFont, color: white });
+    
+    // Infos Événement
     page.drawText(`Date: ${eventDate}`, { x: 24, y: height - 118, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Heure: ${eventTime}`, { x: 140, y: height - 118, size: 10, font: regularFont, color: lightGray });
     page.drawText(`Lieu: ${eventLocation}`, { x: 24, y: height - 136, size: 10, font: regularFont, color: lightGray });
-
-    page.drawText('PARTICIPANT', { x: 24, y: height - 162, size: 8, font: boldFont, color: gold });
-    page.drawText(fullName, { x: 24, y: height - 178, size: 12, font: boldFont, color: white });
-
-    page.drawText('REF:', { x: 24, y: height - 204, size: 8, font: boldFont, color: gold });
-    page.drawText(ticketId.toUpperCase(), { x: 50, y: height - 204, size: 8, font: regularFont, color: lightGray });
-
+    
+    // Tarif
+    const priceText = typeof eventPrice === 'number' ? `${eventPrice.toLocaleString('fr-FR')} FCFA` : eventPrice;
+    page.drawText('TARIF:', { x: 24, y: height - 158, size: 8, font: boldFont, color: gold });
+    page.drawText(priceText, { x: 65, y: height - 158, size: 10, font: boldFont, color: white });
+ 
+    // Participant
+    page.drawText('PARTICIPANT', { x: 24, y: height - 182, size: 8, font: boldFont, color: gold });
+    page.drawText(fullName, { x: 24, y: height - 198, size: 12, font: boldFont, color: white });
+ 
+    // Référence
+    page.drawText('REF:', { x: 24, y: height - 224, size: 8, font: boldFont, color: gold });
+    page.drawText(ticketId.toUpperCase(), { x: 50, y: height - 224, size: 8, font: regularFont, color: lightGray });
+ 
+    // QR Code
     const qrBase64 = qrCodeDataUrl.split(',')[1];
     const qrBuffer = Buffer.from(qrBase64, 'base64');
     const qrImage = await pdfDoc.embedPng(qrBuffer);
@@ -115,7 +154,7 @@ export class TicketsService {
     page.drawRectangle({ x: qrX - 4, y: qrY - 4, width: qrSize + 8, height: qrSize + 8, color: white });
     page.drawImage(qrImage, { x: qrX, y: qrY, width: qrSize, height: qrSize });
     page.drawText('Scanner pour valider', { x: qrX - 2, y: qrY - 16, size: 7, font: regularFont, color: lightGray });
-
+ 
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
   }
@@ -219,7 +258,9 @@ export class TicketsService {
           existingTicket.full_name,
           event.title,
           event.date,
+          event.time || "20:00",
           event.location,
+          event.price || 0,
           ticketId,
           qrCodeDataUrl,
         );
@@ -266,7 +307,9 @@ export class TicketsService {
       ticket.full_name,
       event.title,
       event.date,
+      event.time || "20:00",
       event.location,
+      event.price || 0,
       ticketId,
       qrCodeDataUrl,
     );
