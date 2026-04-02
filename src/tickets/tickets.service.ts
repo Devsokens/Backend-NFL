@@ -99,11 +99,13 @@ export class TicketsService {
  
     // Intégration du LOGO
     try {
-      const logoPath = path.resolve(process.cwd(), '../nfl-tickets/src/assets/Logo_NFL_fond_marron-removebg-preview.png');
+      // Chemin relatif à la racine du projet backend
+      const logoPath = path.resolve(process.cwd(), 'src/assets/logo.png');
+      
       if (fs.existsSync(logoPath)) {
         const logoBuffer = fs.readFileSync(logoPath);
         const logoImage = await pdfDoc.embedPng(logoBuffer);
-        const logoDims = logoImage.scale(0.12); 
+        const logoDims = logoImage.scale(0.12);
         page.drawImage(logoImage, {
           x: 24,
           y: height - logoDims.height - 10,
@@ -114,6 +116,7 @@ export class TicketsService {
         page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 35, size: 12, font: boldFont, color: gold });
       }
     } catch (e) {
+      console.warn("PDF LOGO FAIL (Fallback to text):", e.message);
       page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 35, size: 12, font: boldFont, color: gold });
     }
  
@@ -294,31 +297,43 @@ export class TicketsService {
   }
 
   async getTicketPdf(id: string) {
-    const ticket = await this.findOne(id);
-    const event = ticket.events;
-    
-    const qrData = ticket.qr_code_data;
-    let parsedQr: any = {};
-    try { parsedQr = JSON.parse(qrData); } catch (e) {}
-    const ticketId = parsedQr.ticketId || id.split('-')[0].toUpperCase();
-    
-    const qrCodeDataUrl = await QRCode.toDataURL(qrData, { width: 200 });
-    
-    const buffer = await this.generatePDF(
-      ticket.full_name,
-      event.title,
-      event.date,
-      event.time || "20:00",
-      event.location,
-      event.price || 0,
-      ticketId,
-      qrCodeDataUrl,
-    );
+    try {
+      const ticket = await this.findOne(id);
+      console.log("DEBUG: ticket.events structure =", JSON.stringify(ticket.events, null, 2));
+      
+      let event = ticket.events;
+      if (Array.isArray(event)) event = event[0];
+      
+      if (!event) {
+        throw new Error("L'événement associé à ce ticket est introuvable.");
+      }
+      
+      const qrData = ticket.qr_code_data;
+      let parsedQr: any = {};
+      try { parsedQr = JSON.parse(qrData); } catch (e) {}
+      const ticketId = parsedQr.ticketId || id.split('-')[0].toUpperCase();
+      
+      const qrCodeDataUrl = await QRCode.toDataURL(qrData, { width: 200 });
+      
+      const buffer = await this.generatePDF(
+        ticket.full_name,
+        event.title || "Événement",
+        event.date || "Date à venir",
+        event.time || "20:00",
+        event.location || "Libreville",
+        event.price || 0,
+        ticketId,
+        qrCodeDataUrl,
+      );
 
-    return {
-      buffer,
-      filename: `Billet_${ticketId}.pdf`
-    };
+      return {
+        buffer,
+        filename: `Billet_${ticketId}.pdf`
+      };
+    } catch (err) {
+      console.error("PDF GENERATION ERROR:", err);
+      throw new InternalServerErrorException(`Erreur de génération PDF: ${err.message}`);
+    }
   }
 
   async validate(qrCodeData: string) {
