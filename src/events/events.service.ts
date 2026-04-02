@@ -10,7 +10,7 @@ export class EventsService {
 
   async findAll() {
     const { data, error } = await this.supabase
-      .getClient()
+      .getAdminClient()
       .from('events')
       .select('*, tickets(status)')
       .order('date', { ascending: true });
@@ -26,7 +26,7 @@ export class EventsService {
   async findUpcoming() {
     const today = new Date().toISOString().split('T')[0];
     const { data, error } = await this.supabase
-      .getClient()
+      .getAdminClient()
       .from('events')
       .select('*, tickets(status)')
       .gte('date', today)
@@ -42,7 +42,7 @@ export class EventsService {
 
   async findOne(id: string) {
     const { data, error } = await this.supabase
-      .getClient()
+      .getAdminClient()
       .from('events')
       .select('*, tickets(id, status)')
       .eq('id', id)
@@ -50,7 +50,9 @@ export class EventsService {
     if (error || !data) throw new NotFoundException(`Événement #${id} introuvable`);
     return {
       ...data,
-      ticketsSold: data.tickets?.filter((t: any) => t.status === 'validé' || t.status === 'utilisé').length || 0,
+      ticketsSold: data.tickets?.filter((t: any) => 
+        ['validé', 'validated', 'utilisé', 'used', 'confirmed', 'confirmé'].includes(t.status)
+      ).length || 0,
     };
   }
 
