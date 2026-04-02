@@ -11,8 +11,9 @@ async function bootstrap() {
     origin: [
       process.env.FRONTEND_URL || 'http://localhost:5173',
       'https://nfl-courtier.vercel.app',
-      'http://localhost:5174',
-      'http://localhost:8080',
+      'https://nfl-ga.vercel.app',
+      /\.vercel\.app$/,
+      /localhost:\d+$/,
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],

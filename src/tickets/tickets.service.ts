@@ -124,17 +124,18 @@ export class TicketsService {
  
     page.drawLine({ start: { x: 24, y: height - 70 }, end: { x: width * 0.62, y: height - 70 }, thickness: 1, color: gold, opacity: 0.4 });
  
-    // Événement
-    page.drawText(eventTitle.toUpperCase(), { x: 24, y: height - 95, size: 15, font: boldFont, color: white });
+    // Titre de l'événement sécurisé
+    const safeTitle = (eventTitle || "Événement").toUpperCase();
+    page.drawText(safeTitle, { x: 24, y: height - 95, size: 15, font: boldFont, color: white });
     
     // Infos Événement
-    page.drawText(`Date: ${eventDate}`, { x: 24, y: height - 120, size: 10, font: regularFont, color: lightGray });
-    page.drawText(`Heure: ${eventTime}`, { x: 140, y: height - 120, size: 10, font: regularFont, color: lightGray });
-    page.drawText(`Lieu: ${eventLocation}`, { x: 24, y: height - 138, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Date: ${eventDate || "À venir"}`, { x: 24, y: height - 120, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Heure: ${eventTime || "20:00"}`, { x: 140, y: height - 120, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Lieu: ${eventLocation || "Libreville"}`, { x: 24, y: height - 138, size: 10, font: regularFont, color: lightGray });
     
     // Tarif
     const displayPrice = (eventPrice && Number(eventPrice) > 0) 
-      ? `${Number(eventPrice).toLocaleString('fr-FR')} FCFA` 
+      ? `${Number(eventPrice).toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} FCFA` 
       : 'Gratuit / Sur invitation';
       
     page.drawText('TARIF:', { x: 24, y: height - 158, size: 8, font: boldFont, color: gold });
@@ -142,22 +143,28 @@ export class TicketsService {
  
     // Participant
     page.drawText('PARTICIPANT', { x: 24, y: height - 182, size: 8, font: boldFont, color: gold });
-    page.drawText(fullName, { x: 24, y: height - 198, size: 12, font: boldFont, color: white });
+    page.drawText(String(fullName || "Invité"), { x: 24, y: height - 198, size: 12, font: boldFont, color: white });
  
     // Référence
     page.drawText('REF:', { x: 24, y: height - 224, size: 8, font: boldFont, color: gold });
     page.drawText(ticketId.toUpperCase(), { x: 50, y: height - 224, size: 8, font: regularFont, color: lightGray });
  
-    // QR Code
-    const qrBase64 = qrCodeDataUrl.split(',')[1];
-    const qrBuffer = Buffer.from(qrBase64, 'base64');
-    const qrImage = await pdfDoc.embedPng(qrBuffer);
-    const qrSize = 120;
-    const qrX = width - qrSize - 30;
-    const qrY = (height - qrSize) / 2;
-    page.drawRectangle({ x: qrX - 4, y: qrY - 4, width: qrSize + 8, height: qrSize + 8, color: white });
-    page.drawImage(qrImage, { x: qrX, y: qrY, width: qrSize, height: qrSize });
-    page.drawText('Scanner pour valider', { x: qrX - 2, y: qrY - 16, size: 7, font: regularFont, color: lightGray });
+    // QR Code sécurisé
+    try {
+      if (qrCodeDataUrl && qrCodeDataUrl.includes(',')) {
+        const qrBase64 = qrCodeDataUrl.split(',')[1];
+        const qrBuffer = Buffer.from(qrBase64, 'base64');
+        const qrImage = await pdfDoc.embedPng(qrBuffer);
+        const qrSize = 120;
+        const qrX = width - qrSize - 30;
+        const qrY = (height - qrSize) / 2;
+        page.drawRectangle({ x: qrX - 4, y: qrY - 4, width: qrSize + 8, height: qrSize + 8, color: white });
+        page.drawImage(qrImage, { x: qrX, y: qrY, width: qrSize, height: qrSize });
+        page.drawText('Scanner pour valider', { x: qrX - 2, y: qrY - 16, size: 7, font: regularFont, color: lightGray });
+      }
+    } catch (e) {
+      console.warn("QR CODE EMBED FAIL:", e.message);
+    }
  
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
@@ -257,16 +264,22 @@ export class TicketsService {
         
         const qrCodeDataUrl = await QRCode.toDataURL(qrData, { width: 200 });
         
-        const event = existingTicket.events;
+        let event = existingTicket.events || (existingTicket as any).event;
+        if (Array.isArray(event)) event = event[0];
+        
+        if (!event) {
+          throw new Error("L'événement associé à ce ticket est introuvable.");
+        }
+ 
         const pdfBuffer = await this.generatePDF(
-          existingTicket.full_name,
-          event.title,
-          event.date,
+          existingTicket.full_name || "Invité",
+          event.title || "Événement",
+          event.date || "À venir",
           event.time || "20:00",
-          event.location,
+          event.location || "Libreville",
           event.price || 0,
           ticketId,
-          qrCodeDataUrl,
+          qrCodeDataUrl || "",
         );
 
         await this.sendEmailWithTicket(
@@ -316,14 +329,14 @@ export class TicketsService {
       const qrCodeDataUrl = await QRCode.toDataURL(qrData, { width: 200 });
       
       const buffer = await this.generatePDF(
-        ticket.full_name,
+        ticket.full_name || "Invité",
         event.title || "Événement",
         event.date || "Date à venir",
         event.time || "20:00",
         event.location || "Libreville",
         event.price || 0,
         ticketId,
-        qrCodeDataUrl,
+        qrCodeDataUrl || "",
       );
 
       return {
