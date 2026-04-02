@@ -72,6 +72,12 @@ export class TicketsService {
     }
   }
 
+  private sanitizeText(text: string): string {
+    if (!text) return "";
+    // Supprime les caractères non-WinAnsi (émojis, etc.) pour éviter les crashs PDF
+    return text.replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
+  }
+
   private async generatePDF(
     fullName: string,
     eventTitle: string,
@@ -81,6 +87,10 @@ export class TicketsService {
     ticketId: string,
     qrCodeData: string,
   ): Promise<Buffer> {
+    const safeTitle = this.sanitizeText(eventTitle);
+    const safeName = this.sanitizeText(fullName);
+    const safeLocation = this.sanitizeText(eventLocation);
+
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 250]);
     const { width, height } = page.getSize();
@@ -128,8 +138,7 @@ export class TicketsService {
     page.drawText('PAYÉ ✓', { x: stubX, y: height - 200, size: 12, font: boldFont, color: rgb(0.2, 0.6, 0.2) });
 
     // 5. Section CENTRE (Corps) - Texte VERTICAL
-    // Le titre est écrit verticalement comme sur l'image
-    page.drawText(eventTitle.toUpperCase(), {
+    page.drawText(safeTitle.toUpperCase(), {
       x: 300,
       y: 40,
       size: 20,
@@ -138,7 +147,7 @@ export class TicketsService {
       rotate: degrees(90),
     });
 
-    page.drawText(eventLocation.toUpperCase(), {
+    page.drawText(safeLocation.toUpperCase(), {
       x: 340,
       y: 40,
       size: 11,
@@ -148,7 +157,7 @@ export class TicketsService {
     });
 
     // 6. Infos Participant (Horizontales)
-    page.drawText(`PARTICIPANT: ${fullName.toUpperCase()}`, { x: 160, y: 50, size: 10, font: boldFont, color: rgb(0,0,0) });
+    page.drawText(`PARTICIPANT: ${safeName.toUpperCase()}`, { x: 160, y: 50, size: 10, font: boldFont, color: rgb(0,0,0) });
     page.drawText(`REF: ${ticketId}`, { x: 160, y: 35, size: 10, font: regularFont, color: rgb(0.5, 0.5, 0.5) });
 
     // 7. QR CODE (À DROITE)
