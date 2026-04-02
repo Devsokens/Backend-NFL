@@ -97,8 +97,8 @@ export class TicketsService {
     page.drawLine({ start: { x: 24, y: height - 68 }, end: { x: width * 0.62, y: height - 68 }, thickness: 1, color: gold, opacity: 0.4 });
 
     page.drawText(eventTitle, { x: 24, y: height - 92, size: 16, font: boldFont, color: white });
-    page.drawText(`📅  ${eventDate}`, { x: 24, y: height - 118, size: 10, font: regularFont, color: lightGray });
-    page.drawText(`📍  ${eventLocation}`, { x: 24, y: height - 136, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Date: ${eventDate}`, { x: 24, y: height - 118, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Lieu: ${eventLocation}`, { x: 24, y: height - 136, size: 10, font: regularFont, color: lightGray });
 
     page.drawText('PARTICIPANT', { x: 24, y: height - 162, size: 8, font: boldFont, color: gold });
     page.drawText(fullName, { x: 24, y: height - 178, size: 12, font: boldFont, color: white });
