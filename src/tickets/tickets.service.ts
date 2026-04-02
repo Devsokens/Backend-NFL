@@ -4,11 +4,9 @@ import {
 import { SupabaseService } from '../supabase.service';
 import { CreateTicketDto, UpdateTicketStatusDto } from './dto/ticket.dto';
 import * as QRCode from 'qrcode';
-import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
-import * as fs from 'fs';
-import * as path from 'path';
 
 @Injectable()
 export class TicketsService {
@@ -72,106 +70,54 @@ export class TicketsService {
     }
   }
 
-  private sanitizeText(text: string): string {
-    if (!text) return "";
-    // Supprime les caractères non-WinAnsi (émojis, etc.) pour éviter les crashs PDF
-    return text.replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
-  }
-
   private async generatePDF(
     fullName: string,
     eventTitle: string,
     eventDate: string,
-    eventTime: string,
     eventLocation: string,
     ticketId: string,
-    qrCodeData: string,
+    qrCodeDataUrl: string,
   ): Promise<Buffer> {
-    const safeTitle = this.sanitizeText(eventTitle);
-    const safeName = this.sanitizeText(fullName);
-    const safeLocation = this.sanitizeText(eventLocation);
-
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 250]);
     const { width, height } = page.getSize();
 
+    page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.196, 0.078, 0.047) });
+    page.drawRectangle({ x: 0, y: 0, width: width * 0.65, height, color: rgb(0.224, 0.098, 0.059) });
+
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const gold = rgb(0.784, 0.616, 0.31);
+    const white = rgb(1, 1, 1);
+    const lightGray = rgb(0.8, 0.8, 0.8);
 
-    // 1. Fond blanc
-    page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(1, 1, 1) });
+    page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 40, size: 14, font: boldFont, color: gold });
+    page.drawText('BILLET D\'ENTRÉE', { x: 24, y: height - 58, size: 9, font: regularFont, color: lightGray });
 
-    // 2. Séparateur de la souche (ligne fine dorée à gauche)
-    const stubWidth = 140;
-    page.drawLine({
-      start: { x: stubWidth, y: 20 },
-      end: { x: stubWidth, y: height - 20 },
-      thickness: 1,
-      color: rgb(0.8, 0.6, 0.2), // Or
-      opacity: 0.3
-    });
+    page.drawLine({ start: { x: 24, y: height - 68 }, end: { x: width * 0.62, y: height - 68 }, thickness: 1, color: gold, opacity: 0.4 });
 
-    // 3. Dessiner le logo NFL (Chargé depuis les assets du frontend)
-    try {
-      const logoPath = path.join(process.cwd(), '..', 'nfl-tickets', 'src', 'assets', 'LOGO_NFL-removebg-preview.png');
-      if (fs.existsSync(logoPath)) {
-        const logoBytes = fs.readFileSync(logoPath);
-        const logoImg = await pdfDoc.embedPng(logoBytes);
-        page.drawImage(logoImg, { x: 160, y: height - 60, width: 60, height: 40 });
-      }
-    } catch (e) {
-      console.log("Logo non chargé dans le PDF");
-    }
+    page.drawText(eventTitle, { x: 24, y: height - 92, size: 16, font: boldFont, color: white });
+    page.drawText(`Date: ${eventDate}`, { x: 24, y: height - 118, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Lieu: ${eventLocation}`, { x: 24, y: height - 136, size: 10, font: regularFont, color: lightGray });
 
-    // 4. Section GAUCHE (Souche) - Infos
-    const stubX = 20;
-    // Date
-    page.drawText('DATE', { x: stubX, y: height - 80, size: 8, font: boldFont, color: rgb(0.7,0.7,0.7) });
-    page.drawText(eventDate, { x: stubX, y: height - 100, size: 12, font: boldFont, color: rgb(0,0,0) });
-    
-    // Heure
-    page.drawText('HEURE', { x: stubX, y: height - 130, size: 8, font: boldFont, color: rgb(0.7,0.7,0.7) });
-    page.drawText(eventTime, { x: stubX, y: height - 150, size: 12, font: boldFont, color: rgb(0,0,0) });
+    page.drawText('PARTICIPANT', { x: 24, y: height - 162, size: 8, font: boldFont, color: gold });
+    page.drawText(fullName, { x: 24, y: height - 178, size: 12, font: boldFont, color: white });
 
-    // Tarif
-    page.drawText('TARIF', { x: stubX, y: height - 180, size: 8, font: boldFont, color: rgb(0.7,0.7,0.7) });
-    page.drawText('PAYÉ ✓', { x: stubX, y: height - 200, size: 12, font: boldFont, color: rgb(0.2, 0.6, 0.2) });
+    page.drawText('REF:', { x: 24, y: height - 204, size: 8, font: boldFont, color: gold });
+    page.drawText(ticketId.toUpperCase(), { x: 50, y: height - 204, size: 8, font: regularFont, color: lightGray });
 
-    // 5. Section CENTRE (Corps) - Texte VERTICAL
-    page.drawText(safeTitle.toUpperCase(), {
-      x: 300,
-      y: 40,
-      size: 20,
-      font: boldFont,
-      color: rgb(0.1, 0.1, 0.1),
-      rotate: degrees(90),
-    });
+    const qrBase64 = qrCodeDataUrl.split(',')[1];
+    const qrBuffer = Buffer.from(qrBase64, 'base64');
+    const qrImage = await pdfDoc.embedPng(qrBuffer);
+    const qrSize = 120;
+    const qrX = width - qrSize - 30;
+    const qrY = (height - qrSize) / 2;
+    page.drawRectangle({ x: qrX - 4, y: qrY - 4, width: qrSize + 8, height: qrSize + 8, color: white });
+    page.drawImage(qrImage, { x: qrX, y: qrY, width: qrSize, height: qrSize });
+    page.drawText('Scanner pour valider', { x: qrX - 2, y: qrY - 16, size: 7, font: regularFont, color: lightGray });
 
-    page.drawText(safeLocation.toUpperCase(), {
-      x: 340,
-      y: 40,
-      size: 11,
-      font: regularFont,
-      color: rgb(0.4, 0.4, 0.4),
-      rotate: degrees(90),
-    });
-
-    // 6. Infos Participant (Horizontales)
-    page.drawText(`PARTICIPANT: ${safeName.toUpperCase()}`, { x: 160, y: 50, size: 10, font: boldFont, color: rgb(0,0,0) });
-    page.drawText(`REF: ${ticketId}`, { x: 160, y: 35, size: 10, font: regularFont, color: rgb(0.5, 0.5, 0.5) });
-
-    // 7. QR CODE (À DROITE)
-    try {
-      const qrImage = await QRCode.toDataURL(qrCodeData, { margin: 1, color: { dark: '#000000', light: '#FFFFFF' } });
-      const qrBuffer = Buffer.from(qrImage.split(',')[1], 'base64');
-      const qrDocImg = await pdfDoc.embedPng(qrBuffer);
-      page.drawImage(qrDocImg, { x: width - 110, y: height - 110, width: 90, height: 90 });
-      page.drawText('VALIDATION ACCÈS', { x: width - 110, y: height - 125, size: 7, font: boldFont, color: rgb(0.3, 0.3, 0.3) });
-    } catch (e) {
-      console.error("QR Code Error in PDF:", e);
-    }
-
-    return Buffer.from(await pdfDoc.save());
+    const pdfBytes = await pdfDoc.save();
+    return Buffer.from(pdfBytes);
   }
 
   async create(dto: CreateTicketDto) {
@@ -249,7 +195,7 @@ export class TicketsService {
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('tickets')
-      .select('*, events(title, date, time, location, whatsapp_number)')
+      .select('*, events(title, date, location, whatsapp_number)')
       .eq('id', id)
       .single();
     if (error || !data) throw new NotFoundException(`Ticket #${id} introuvable`);
@@ -273,10 +219,9 @@ export class TicketsService {
           existingTicket.full_name,
           event.title,
           event.date,
-          event.time || "20:00",
           event.location,
           ticketId,
-          qrData,
+          qrCodeDataUrl,
         );
 
         await this.sendEmailWithTicket(
@@ -304,6 +249,32 @@ export class TicketsService {
       .single();
     if (error) throw new InternalServerErrorException(error.message);
     return data;
+  }
+
+  async getTicketPdf(id: string) {
+    const ticket = await this.findOne(id);
+    const event = ticket.events;
+    
+    const qrData = ticket.qr_code_data;
+    let parsedQr: any = {};
+    try { parsedQr = JSON.parse(qrData); } catch (e) {}
+    const ticketId = parsedQr.ticketId || id.split('-')[0].toUpperCase();
+    
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData, { width: 200 });
+    
+    const buffer = await this.generatePDF(
+      ticket.full_name,
+      event.title,
+      event.date,
+      event.location,
+      ticketId,
+      qrCodeDataUrl,
+    );
+
+    return {
+      buffer,
+      filename: `Billet_${ticketId}.pdf`
+    };
   }
 
   async validate(qrCodeData: string) {

@@ -1,6 +1,7 @@
 import {
-  Controller, Get, Post, Patch, Body, Param, UseGuards,
+  Controller, Get, Post, Patch, Body, Param, UseGuards, Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody,
 } from '@nestjs/swagger';
@@ -52,6 +53,24 @@ export class TicketsController {
   @ApiResponse({ status: 404, description: 'Ticket introuvable.' })
   findOne(@Param('id') id: string) {
     return this.ticketsService.findOne(id);
+  }
+
+  @Get(':id/pdf')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] Télécharger le billet PDF' })
+  @ApiParam({ name: 'id', description: 'UUID du ticket' })
+  @ApiResponse({ status: 200, description: 'Le fichier PDF du billet.' })
+  async downloadPdf(@Param('id') id: string, @Res() res: Response) {
+    const { buffer, filename } = await this.ticketsService.getTicketPdf(id);
+    
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    
+    res.end(buffer);
   }
 
   @Patch(':id/status')
