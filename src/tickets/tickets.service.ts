@@ -99,42 +99,43 @@ export class TicketsService {
  
     // Intégration du LOGO
     try {
-      const logoPath = path.join(process.cwd(), '../nfl-tickets/src/assets/Logo_NFL_fond_marron-removebg-preview.png');
+      const logoPath = path.resolve(process.cwd(), '../nfl-tickets/src/assets/Logo_NFL_fond_marron-removebg-preview.png');
       if (fs.existsSync(logoPath)) {
         const logoBuffer = fs.readFileSync(logoPath);
         const logoImage = await pdfDoc.embedPng(logoBuffer);
-        const logoDims = logoImage.scale(0.15); // Réduire la taille du logo
+        const logoDims = logoImage.scale(0.12); 
         page.drawImage(logoImage, {
           x: 24,
-          y: height - logoDims.height - 15,
+          y: height - logoDims.height - 10,
           width: logoDims.width,
           height: logoDims.height,
         });
       } else {
-        // Fallback texte si logo non trouvé
-        page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 40, size: 14, font: boldFont, color: gold });
+        page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 35, size: 12, font: boldFont, color: gold });
       }
     } catch (e) {
-      console.warn("Impossible de charger le logo PDF:", e.message);
-      page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 40, size: 14, font: boldFont, color: gold });
+      page.drawText('NFL COURTIER & SERVICE', { x: 24, y: height - 35, size: 12, font: boldFont, color: gold });
     }
  
-    page.drawText('BILLET D\'ENTRÉE', { x: 24, y: height - 58, size: 9, font: regularFont, color: lightGray });
+    page.drawText('BILLET D\'ENTRÉE', { x: 24, y: height - 60, size: 8, font: regularFont, color: lightGray });
  
-    page.drawLine({ start: { x: 24, y: height - 68 }, end: { x: width * 0.62, y: height - 68 }, thickness: 1, color: gold, opacity: 0.4 });
+    page.drawLine({ start: { x: 24, y: height - 70 }, end: { x: width * 0.62, y: height - 70 }, thickness: 1, color: gold, opacity: 0.4 });
  
     // Événement
-    page.drawText(eventTitle, { x: 24, y: height - 92, size: 16, font: boldFont, color: white });
+    page.drawText(eventTitle.toUpperCase(), { x: 24, y: height - 95, size: 15, font: boldFont, color: white });
     
     // Infos Événement
-    page.drawText(`Date: ${eventDate}`, { x: 24, y: height - 118, size: 10, font: regularFont, color: lightGray });
-    page.drawText(`Heure: ${eventTime}`, { x: 140, y: height - 118, size: 10, font: regularFont, color: lightGray });
-    page.drawText(`Lieu: ${eventLocation}`, { x: 24, y: height - 136, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Date: ${eventDate}`, { x: 24, y: height - 120, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Heure: ${eventTime}`, { x: 140, y: height - 120, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Lieu: ${eventLocation}`, { x: 24, y: height - 138, size: 10, font: regularFont, color: lightGray });
     
     // Tarif
-    const priceText = typeof eventPrice === 'number' ? `${eventPrice.toLocaleString('fr-FR')} FCFA` : eventPrice;
+    const displayPrice = (eventPrice && Number(eventPrice) > 0) 
+      ? `${Number(eventPrice).toLocaleString('fr-FR')} FCFA` 
+      : 'Gratuit / Sur invitation';
+      
     page.drawText('TARIF:', { x: 24, y: height - 158, size: 8, font: boldFont, color: gold });
-    page.drawText(priceText, { x: 65, y: height - 158, size: 10, font: boldFont, color: white });
+    page.drawText(displayPrice, { x: 65, y: height - 158, size: 10, font: boldFont, color: white });
  
     // Participant
     page.drawText('PARTICIPANT', { x: 24, y: height - 182, size: 8, font: boldFont, color: gold });
@@ -213,7 +214,7 @@ export class TicketsService {
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('tickets')
-      .select('*, events(title, date, location)')
+      .select('*, events(*)')
       .order('created_at', { ascending: false });
     if (error) throw new InternalServerErrorException(error.message);
     return data;
@@ -223,7 +224,7 @@ export class TicketsService {
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('tickets')
-      .select('*')
+      .select('*, events(*)')
       .eq('event_id', eventId)
       .order('created_at', { ascending: false });
     if (error) throw new InternalServerErrorException(error.message);
@@ -234,7 +235,7 @@ export class TicketsService {
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('tickets')
-      .select('*, events(title, date, location, whatsapp_number)')
+      .select('*, events(*)')
       .eq('id', id)
       .single();
     if (error || !data) throw new NotFoundException(`Ticket #${id} introuvable`);
