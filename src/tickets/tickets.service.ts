@@ -38,19 +38,19 @@ export class TicketsService {
       await transporter.sendMail({
         from: `"NFL Courtier & Service" <${process.env.BREVO_SENDER_EMAIL}>`,
         to: email,
-        subject: `🎟️ Votre billet — ${eventTitle}`,
+        subject: `Votre billet — ${eventTitle}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
             <div style="background: #32140c; padding: 32px; text-align: center;">
               <h1 style="color: #c79d4f; margin: 0; font-size: 28px;">NFL Courtier & Service</h1>
             </div>
             <div style="padding: 32px;">
-              <h2 style="color: #32140c;">Bonjour ${fullName} 👋</h2>
+              <h2 style="color: #32140c;">Bonjour ${fullName}</h2>
               <p style="color: #555; font-size: 16px;">Votre inscription à l'événement <strong>${eventTitle}</strong> est confirmée !</p>
               <div style="background: #f9f5ee; border-left: 4px solid #c79d4f; padding: 20px; border-radius: 8px; margin: 24px 0;">
-                <p style="margin: 0; color: #32140c;"><strong>📅 Date:</strong> ${eventDate}</p>
-                <p style="margin: 8px 0 0; color: #32140c;"><strong>📍 Lieu:</strong> ${eventLocation}</p>
-                <p style="margin: 8px 0 0; color: #32140c;"><strong>🎫 Référence:</strong> ${ticketId}</p>
+                <p style="margin: 0; color: #32140c;"><strong>Date:</strong> ${eventDate}</p>
+                <p style="margin: 8px 0 0; color: #32140c;"><strong>Lieu:</strong> ${eventLocation}</p>
+                <p style="margin: 8px 0 0; color: #32140c;"><strong>Référence:</strong> ${ticketId}</p>
               </div>
               <p style="color: #555;">Votre billet PDF est joint à cet email. Présentez-le à l'entrée.</p>
               <hr style="border: 1px solid #eee; margin: 24px 0;" />

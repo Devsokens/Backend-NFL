@@ -6,5 +6,6 @@ import { SupabaseService } from '../supabase.service';
 @Module({
   controllers: [NewsletterController],
   providers: [NewsletterService, SupabaseService],
+  exports: [NewsletterService],
 })
 export class NewsletterModule {}

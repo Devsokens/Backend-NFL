@@ -57,6 +57,57 @@ export class NewsletterService {
     return { message: `${email} a été désabonné avec succès.` };
   }
 
+  async notifyNewEvent(event: any) {
+    const { data: subscribers, error } = await this.supabase
+      .getAdminClient()
+      .from('newsletter_subscribers')
+      .select('email');
+
+    if (error || !subscribers || subscribers.length === 0) return;
+
+    const transporter = nodemailer.createTransport({
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      auth: {
+        user: process.env.BREVO_SENDER_EMAIL,
+        pass: process.env.BREVO_API_KEY,
+      },
+    });
+
+    const eventUrl = `https://nfl-ga.vercel.app/event/${event.id}`;
+
+    for (const sub of subscribers) {
+      try {
+        await transporter.sendMail({
+          from: `"NFL Courtier & Service" <${process.env.BREVO_SENDER_EMAIL}>`,
+          to: sub.email,
+          subject: `Nouvel Evénement : ${event.title}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: #32140c; padding: 32px; text-align: center;">
+                <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
+              </div>
+              <div style="padding: 32px;">
+                <h2 style="color: #32140c;">Découvrez notre nouvel événement !</h2>
+                <p style="color: #555; font-size: 16px;">Nous avons le plaisir de vous annoncer l'ouverture des réservations pour : <strong>${event.title}</strong>.</p>
+                <div style="background: #f9f5ee; border-left: 4px solid #c79d4f; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                  <p style="margin: 0; color: #32140c;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('fr-FR')}</p>
+                  <p style="margin: 8px 0 0; color: #32140c;"><strong>Lieu:</strong> ${event.location}</p>
+                </div>
+                <div style="text-align: center; margin-top: 32px;">
+                  <a href="${eventUrl}" style="background: #c79d4f; color: #32140c; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Réserver ma place</a>
+                </div>
+                <p style="color: #999; font-size: 12px; margin-top: 32px; text-align: center;">Vous recevez cet email car vous êtes abonné à la newsletter NFL.</p>
+              </div>
+            </div>
+          `,
+        });
+      } catch (e) {
+        console.error(`Failed to notify ${sub.email}:`, e);
+      }
+    }
+  }
+
   private async sendWelcomeEmail(email: string) {
     const transporter = nodemailer.createTransport({
       host: 'smtp-relay.brevo.com',
@@ -70,14 +121,14 @@ export class NewsletterService {
     await transporter.sendMail({
       from: `"NFL Courtier & Service" <${process.env.BREVO_SENDER_EMAIL}>`,
       to: email,
-      subject: '🎉 Bienvenue dans la Newsletter NFL !',
+      subject: 'Bienvenue dans la Newsletter NFL',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #32140c; padding: 32px; text-align: center;">
             <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
           </div>
           <div style="padding: 32px;">
-            <h2 style="color: #32140c;">Bienvenue ! 🥳</h2>
+            <h2 style="color: #32140c;">Bienvenue !</h2>
             <p style="color: #555; font-size: 16px;">Vous êtes maintenant abonné à notre newsletter. Vous recevrez en avant-première nos événements, nos offres de voyage et nos actualités.</p>
             <p style="color: #999; font-size: 12px; margin-top: 32px;">Pour vous désabonner, répondez à cet email avec "Désabonnement".</p>
           </div>

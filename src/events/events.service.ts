@@ -4,9 +4,14 @@ import {
 import { SupabaseService } from '../supabase.service';
 import { CreateEventDto, UpdateEventDto } from './dto/event.dto';
 
+import { NewsletterService } from '../newsletter/newsletter.service';
+
 @Injectable()
 export class EventsService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly newsletterService: NewsletterService,
+  ) {}
 
   async findAll() {
     const { data, error } = await this.supabase
@@ -64,6 +69,14 @@ export class EventsService {
       .select()
       .single();
     if (error) throw new InternalServerErrorException(error.message);
+
+    // Notify newsletter subscribers
+    try {
+      this.newsletterService.notifyNewEvent(data);
+    } catch (e) {
+      console.error('Newsletter notification failed:', e);
+    }
+
     return data;
   }
 
