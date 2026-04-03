@@ -68,13 +68,16 @@ export class NewsletterService {
     const transporter = nodemailer.createTransport({
       host: 'smtp-relay.brevo.com',
       port: 587,
+      secure: false,
       auth: {
-        user: process.env.BREVO_SENDER_EMAIL,
+        user: process.env.BREVO_SMTP_USER,
         pass: process.env.BREVO_API_KEY,
       },
     });
 
     const eventUrl = `https://nfl-ga.vercel.app/event/${event.id}`;
+
+    console.log(`Sending newsletter for event "${event.title}" to ${subscribers.length} subscribers...`);
 
     for (const sub of subscribers) {
       try {
@@ -83,7 +86,7 @@ export class NewsletterService {
           to: sub.email,
           subject: `Nouvel Evénement : ${event.title}`,
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
               <div style="background: #32140c; padding: 32px; text-align: center;">
                 <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
               </div>
@@ -102,6 +105,7 @@ export class NewsletterService {
             </div>
           `,
         });
+        console.log(`Newsletter sent to ${sub.email}`);
       } catch (e) {
         console.error(`Failed to notify ${sub.email}:`, e);
       }
@@ -112,8 +116,9 @@ export class NewsletterService {
     const transporter = nodemailer.createTransport({
       host: 'smtp-relay.brevo.com',
       port: 587,
+      secure: false,
       auth: {
-        user: process.env.BREVO_SENDER_EMAIL,
+        user: process.env.BREVO_SMTP_USER,
         pass: process.env.BREVO_API_KEY,
       },
     });
@@ -123,7 +128,7 @@ export class NewsletterService {
       to: email,
       subject: 'Bienvenue dans la Newsletter NFL',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
           <div style="background: #32140c; padding: 32px; text-align: center;">
             <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
           </div>
@@ -135,5 +140,6 @@ export class NewsletterService {
         </div>
       `,
     });
+    console.log(`Welcome email sent to ${email}`);
   }
 }
