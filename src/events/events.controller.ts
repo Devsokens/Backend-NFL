@@ -85,7 +85,7 @@ export class EventsController {
     return this.eventsService.create(createEventDto);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '[Admin] Mettre à jour un événement' })
