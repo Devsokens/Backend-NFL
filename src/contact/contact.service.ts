@@ -7,6 +7,19 @@ import * as nodemailer from 'nodemailer';
 export class ContactService {
   constructor(private readonly supabase: SupabaseService) {}
 
+  async findAll() {
+    const { data, error } = await this.supabase
+      .getAdminClient()
+      .from('contacts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+    return data;
+  }
+
   async create(dto: CreateContactDto) {
     // 1. Save to Supabase (table: contacts)
     const { data, error } = await this.supabase
