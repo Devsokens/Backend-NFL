@@ -70,14 +70,10 @@ export class EventsService {
       .single();
     if (error) throw new InternalServerErrorException(error.message);
 
-    // Notify newsletter subscribers
-    try {
-      // Await the notification to ensure background process doesn't get killed 
-      // by the hosting provider (Render/Vercel) before finishing.
-      await this.newsletterService.notifyNewEvent(data);
-    } catch (e) {
-      console.error('Newsletter notification failed:', e);
-    }
+    // Notify newsletter subscribers in the background (no await)
+    this.newsletterService.notifyNewEvent(data).catch((e) => {
+      console.error('[BACKGROUND] Newsletter notification failed:', e.message);
+    });
 
     return data;
   }

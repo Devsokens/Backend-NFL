@@ -73,28 +73,28 @@ export class NewsletterService {
       return;
     }
 
-    console.log(`Attempting to notify ${subscribers.length} subscribers for event: ${event.title}`);
-
-    const transporter = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.BREVO_SMTP_USER,
-        pass: process.env.BREVO_API_KEY,
-      },
-    });
-
-    const frontendUrl = process.env.FRONTEND_URL || 'https://nfl-ga.vercel.app';
-    const eventUrl = `${frontendUrl}/event/${event.id}`;
-
-    console.log(`Sending newsletter for event "${event.title}" to ${subscribers.length} subscribers...`);
+    console.log(`[NEWSLETTER] Démarrage de l'envoi pour l'événement "${event.title}"`);
+    console.log(`[NEWSLETTER] Nombre d'abonnés à notifier : ${subscribers.length}`);
 
     let successCount = 0;
     let failCount = 0;
 
     for (const sub of subscribers) {
       try {
+        // On crée le transporter à l'intérieur de la boucle pour garantir une connexion fraîche par mail (comme dans le service tickets)
+        const transporter = nodemailer.createTransport({
+          host: 'smtp-relay.brevo.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: process.env.BREVO_SMTP_USER,
+            pass: process.env.BREVO_API_KEY,
+          },
+        });
+
+        const frontendUrl = process.env.FRONTEND_URL || 'https://nfl-ga.vercel.app';
+        const eventUrl = `${frontendUrl}/event/${event.id}`;
+
         await transporter.sendMail({
           from: `"NFL Courtier & Service" <${process.env.BREVO_SENDER_EMAIL}>`,
           to: sub.email,
@@ -121,12 +121,28 @@ export class NewsletterService {
           `,
         });
         successCount++;
+        console.log(`[NEWSLETTER] ✅ Mail envoyé à : ${sub.email}`);
       } catch (e) {
         failCount++;
-        console.error(`Failed to notify ${sub.email}:`, e);
+        console.error(`[NEWSLETTER] ❌ Échec pour ${sub.email}:`, e.message);
       }
     }
-    console.log(`Newsletter summary: ${successCount} sent, ${failCount} failed.`);
+    console.log(`[NEWSLETTER] Synthèse : ${successCount} envoyés, ${failCount} échecs.`);
+
+    // Mise à jour du statut de l'événement pour notifier le frontend via Realtime
+    try {
+      await this.supabase
+        .getAdminClient()
+        .from('events')
+        .update({ 
+          newsletter_status: 'sent',
+          newsletter_sent_at: new Date().toISOString() 
+        })
+        .eq('id', event.id);
+      console.log(`[NEWSLETTER] Statut de l'événement ${event.id} mis à jour : 'sent'`);
+    } catch (dbErr) {
+      console.error(`[NEWSLETTER] Erreur mise à jour statut DB :`, dbErr.message);
+    }
   }
 
   private async sendWelcomeEmail(email: string) {
