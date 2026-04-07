@@ -72,7 +72,9 @@ export class EventsService {
 
     // Notify newsletter subscribers
     try {
-      this.newsletterService.notifyNewEvent(data);
+      // Await the notification to ensure background process doesn't get killed 
+      // by the hosting provider (Render/Vercel) before finishing.
+      await this.newsletterService.notifyNewEvent(data);
     } catch (e) {
       console.error('Newsletter notification failed:', e);
     }

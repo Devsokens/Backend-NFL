@@ -63,7 +63,17 @@ export class NewsletterService {
       .from('newsletter_subscribers')
       .select('email');
 
-    if (error || !subscribers || subscribers.length === 0) return;
+    if (error) {
+      console.error('Error fetching subscribers:', error);
+      return;
+    }
+    
+    if (!subscribers || subscribers.length === 0) {
+      console.log('No newsletter subscribers found to notify.');
+      return;
+    }
+
+    console.log(`Attempting to notify ${subscribers.length} subscribers for event: ${event.title}`);
 
     const transporter = nodemailer.createTransport({
       host: 'smtp-relay.brevo.com',
