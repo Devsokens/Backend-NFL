@@ -127,30 +127,64 @@ export class TicketsService {
  
     page.drawLine({ start: { x: 24, y: height - 70 }, end: { x: width * 0.62, y: height - 70 }, thickness: 1, color: gold, opacity: 0.4 });
  
-    // Titre de l'événement sécurisé
+    // Titre de l'événement avec gestion du retour à la ligne
     const safeTitle = (eventTitle || "Événement").toUpperCase();
-    page.drawText(safeTitle, { x: 24, y: height - 95, size: 15, font: boldFont, color: white });
+    const maxTitleWidth = width * 0.6 - 24;
+    const titleSize = 15;
     
-    // Infos Événement
-    page.drawText(`Date: ${eventDate || "À venir"}`, { x: 24, y: height - 120, size: 10, font: regularFont, color: lightGray });
-    page.drawText(`Heure: ${eventTime || "20:00"}`, { x: 140, y: height - 120, size: 10, font: regularFont, color: lightGray });
-    page.drawText(`Lieu: ${eventLocation || "Libreville"}`, { x: 24, y: height - 138, size: 10, font: regularFont, color: lightGray });
+    // Fonction simple de découpe de texte
+    const words = safeTitle.split(' ');
+    const lines: string[] = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+        const word = words[i];
+        const textWidth = boldFont.widthOfTextAtSize(currentLine + " " + word, titleSize);
+        if (textWidth < maxTitleWidth) {
+            currentLine += " " + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    lines.push(currentLine);
+
+    // Limiter à 2 lignes pour garder le design propre
+    let titleY = height - 95;
+    const titleLines = lines.slice(0, 2);
+    titleLines.forEach((line, index) => {
+      page.drawText(line, { 
+        x: 24, 
+        y: titleY - (index * 18), 
+        size: titleSize, 
+        font: boldFont, 
+        color: white 
+      });
+    });
+    
+    // Ajuster le point de départ des infos suivantes
+    const infoStartY = titleY - (titleLines.length * 18) - 10;
+    
+    // Infos Événement repositionnées
+    page.drawText(`Date: ${eventDate || "À venir"}`, { x: 24, y: infoStartY, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Heure: ${eventTime || "20:00"}`, { x: 140, y: infoStartY, size: 10, font: regularFont, color: lightGray });
+    page.drawText(`Lieu: ${eventLocation || "Libreville"}`, { x: 24, y: infoStartY - 18, size: 10, font: regularFont, color: lightGray });
     
     // Tarif
     const displayPrice = (eventPrice && Number(eventPrice) > 0) 
       ? `${Number(eventPrice).toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} FCFA` 
       : 'Gratuit / Sur invitation';
       
-    page.drawText('TARIF:', { x: 24, y: height - 158, size: 8, font: boldFont, color: gold });
-    page.drawText(displayPrice, { x: 65, y: height - 158, size: 10, font: boldFont, color: white });
+    page.drawText('TARIF:', { x: 24, y: infoStartY - 38, size: 8, font: boldFont, color: gold });
+    page.drawText(displayPrice, { x: 65, y: infoStartY - 38, size: 10, font: boldFont, color: white });
  
     // Participant
-    page.drawText('PARTICIPANT', { x: 24, y: height - 182, size: 8, font: boldFont, color: gold });
-    page.drawText(String(fullName || "Invité"), { x: 24, y: height - 198, size: 12, font: boldFont, color: white });
+    page.drawText('PARTICIPANT', { x: 24, y: infoStartY - 62, size: 8, font: boldFont, color: gold });
+    page.drawText(String(fullName || "Invité"), { x: 24, y: infoStartY - 78, size: 12, font: boldFont, color: white });
  
     // Référence
-    page.drawText('REF:', { x: 24, y: height - 224, size: 8, font: boldFont, color: gold });
-    page.drawText(ticketId.toUpperCase(), { x: 50, y: height - 224, size: 8, font: regularFont, color: lightGray });
+    page.drawText('REF:', { x: 24, y: infoStartY - 104, size: 8, font: boldFont, color: gold });
+    page.drawText(ticketId.toUpperCase(), { x: 50, y: infoStartY - 104, size: 8, font: regularFont, color: lightGray });
  
     // QR Code sécurisé
     try {
