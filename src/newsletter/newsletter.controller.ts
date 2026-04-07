@@ -38,10 +38,4 @@ export class NewsletterController {
   unsubscribe(@Param('email') email: string) {
     return this.newsletterService.unsubscribe(email);
   }
-
-  @Get('test-smtp')
-  @ApiOperation({ summary: 'Test Diagnostic SMTP', description: 'Permet de vérifier en direct si les identifiants SMTP fonctionnent pour la newsletter.' })
-  async testSmtp() {
-    return this.newsletterService.testSmtpConnection();
-  }
 }

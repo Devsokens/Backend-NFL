@@ -189,35 +189,4 @@ export class NewsletterService {
       console.log(`Welcome email via API sent to ${email}`);
     }
   }
-
-  async testSmtpConnection() {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: 'smtp-relay.brevo.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.BREVO_SMTP_USER,
-          pass: process.env.BREVO_API_KEY,
-        },
-      });
-
-      const verifyResult = await transporter.verify();
-      
-      return { 
-        status: 'success', 
-        message: 'Connexion au serveur Brevo réussie !', 
-        user: process.env.BREVO_SMTP_USER,
-        verifyResult 
-      };
-    } catch (error) {
-      console.error('SMTP Test Failed', error);
-      return { 
-        status: 'error', 
-        message: "Échec de connexion à Brevo. Vérifiez vos identifiants dans l'onglet Environment de Render.", 
-        error: error.message,
-        user: process.env.BREVO_SMTP_USER || 'NON_DEFINI'
-      };
-    }
-  }
 }
