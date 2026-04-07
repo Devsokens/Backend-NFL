@@ -108,6 +108,7 @@ export class NewsletterService {
                   <p style="color: #555; font-size: 16px;">Nous avons le plaisir de vous annoncer l'ouverture des réservations pour : <strong>${event.title}</strong>.</p>
                   <div style="background: #f9f5ee; border-left: 4px solid #c79d4f; padding: 20px; border-radius: 8px; margin: 24px 0;">
                     <p style="margin: 0; color: #32140c;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('fr-FR')}</p>
+                    <p style="margin: 8px 0 0; color: #32140c;"><strong>Heure:</strong> ${event.time || "Non précisée"}</p>
                     <p style="margin: 8px 0 0; color: #32140c;"><strong>Lieu:</strong> ${event.location}</p>
                   </div>
                   <p style="color: #555; font-size: 14px; margin: 24px 0;">${event.description ? event.description.substring(0, 200) + '...' : ''}</p>
