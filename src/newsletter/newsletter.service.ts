@@ -27,12 +27,8 @@ export class NewsletterService {
 
     if (error) throw new InternalServerErrorException(error.message);
 
-    // Send welcome email
-    try {
-      await this.sendWelcomeEmail(dto.email);
-    } catch (e) {
-      console.error('Welcome email failed:', e);
-    }
+    // Send welcome email (Non-blocking)
+    this.sendWelcomeEmail(dto.email).catch(e => console.error('Welcome email failed:', e));
 
     return { message: 'Abonnement confirmé ! Bienvenue dans la newsletter NFL 🎉', data };
   }

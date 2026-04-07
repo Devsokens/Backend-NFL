@@ -24,51 +24,54 @@ export class TicketsService {
     qrCodeBase64: string,
     pdfBuffer: Buffer,
   ) {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.BREVO_SMTP_USER,
-        pass: process.env.BREVO_API_KEY,
-      },
-    });
-
     try {
-      await transporter.sendMail({
-        from: `"NFL Courtier & Service" <${process.env.BREVO_SENDER_EMAIL}>`,
-        to: email,
-        subject: `Votre billet — ${eventTitle}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
-            <div style="background: #32140c; padding: 32px; text-align: center;">
-              <h1 style="color: #c79d4f; margin: 0; font-size: 28px;">NFL Courtier & Service</h1>
-            </div>
-            <div style="padding: 32px;">
-              <h2 style="color: #32140c;">Bonjour ${fullName}</h2>
-              <p style="color: #555; font-size: 16px;">Votre inscription à l'événement <strong>${eventTitle}</strong> est confirmée !</p>
-              <div style="background: #f9f5ee; border-left: 4px solid #c79d4f; padding: 20px; border-radius: 8px; margin: 24px 0;">
-                <p style="margin: 0; color: #32140c;"><strong>Date:</strong> ${eventDate}</p>
-                <p style="margin: 8px 0 0; color: #32140c;"><strong>Lieu:</strong> ${eventLocation}</p>
-                <p style="margin: 8px 0 0; color: #32140c;"><strong>Référence:</strong> ${ticketId}</p>
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY || '',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { email: process.env.BREVO_SENDER_EMAIL, name: "NFL Courtier & Service" },
+          to: [{ email: email, name: fullName }],
+          subject: `Votre billet — ${eventTitle}`,
+          htmlContent: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
+              <div style="background: #32140c; padding: 32px; text-align: center;">
+                <h1 style="color: #c79d4f; margin: 0; font-size: 28px;">NFL Courtier & Service</h1>
               </div>
-              <p style="color: #555;">Votre billet PDF est joint à cet email. Présentez-le à l'entrée.</p>
-              <hr style="border: 1px solid #eee; margin: 24px 0;" />
-              <p style="color: #999; font-size: 12px; text-align: center;">© NFL Courtier & Service — Libreville, Gabon</p>
+              <div style="padding: 32px;">
+                <h2 style="color: #32140c;">Bonjour ${fullName}</h2>
+                <p style="color: #555; font-size: 16px;">Votre inscription à l'événement <strong>${eventTitle}</strong> est confirmée !</p>
+                <div style="background: #f9f5ee; border-left: 4px solid #c79d4f; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                  <p style="margin: 0; color: #32140c;"><strong>Date:</strong> ${eventDate}</p>
+                  <p style="margin: 8px 0 0; color: #32140c;"><strong>Lieu:</strong> ${eventLocation}</p>
+                  <p style="margin: 8px 0 0; color: #32140c;"><strong>Référence:</strong> ${ticketId}</p>
+                </div>
+                <p style="color: #555;">Votre billet PDF est joint à cet email. Présentez-le à l'entrée.</p>
+                <hr style="border: 1px solid #eee; margin: 24px 0;" />
+                <p style="color: #999; font-size: 12px; text-align: center;">© NFL Courtier & Service — Libreville, Gabon</p>
+              </div>
             </div>
-          </div>
-        `,
-        attachments: [
-          {
-            filename: `ticket-nfl-${ticketId}.pdf`,
-            content: pdfBuffer,
-            contentType: 'application/pdf',
-          },
-        ],
+          `,
+          attachment: [
+            {
+              content: pdfBuffer.toString('base64'),
+              name: `ticket-nfl-${ticketId}.pdf`
+            }
+          ]
+        })
       });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(`Brevo API Error: ${err.message}`);
+      }
+
+      console.log(`[TICKETS] Billet envoyé via API à : ${email}`);
     } catch (error) {
-      console.error("DÉTAIL ERREUR NODEMAILER :", error);
-      throw error;
+      console.error("[TICKETS] ÉCHEC ENVOI API :", error);
     }
   }
 
