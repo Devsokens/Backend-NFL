@@ -10,6 +10,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       process.env.FRONTEND_URL || 'http://localhost:5173',
+      'https://nfl-ga.com',
       'https://www.nfl-ga.com',
       'https://nfl-courtier.vercel.app',
       'https://nfl-ga.vercel.app',
