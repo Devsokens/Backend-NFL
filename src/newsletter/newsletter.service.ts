@@ -75,9 +75,13 @@ export class NewsletterService {
       },
     });
 
-    const eventUrl = `https://nfl-ga.vercel.app/event/${event.id}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://nfl-ga.vercel.app';
+    const eventUrl = `${frontendUrl}/event/${event.id}`;
 
     console.log(`Sending newsletter for event "${event.title}" to ${subscribers.length} subscribers...`);
+
+    let successCount = 0;
+    let failCount = 0;
 
     for (const sub of subscribers) {
       try {
@@ -97,6 +101,7 @@ export class NewsletterService {
                   <p style="margin: 0; color: #32140c;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('fr-FR')}</p>
                   <p style="margin: 8px 0 0; color: #32140c;"><strong>Lieu:</strong> ${event.location}</p>
                 </div>
+                <p style="color: #555; font-size: 14px; margin: 24px 0;">${event.description ? event.description.substring(0, 200) + '...' : ''}</p>
                 <div style="text-align: center; margin-top: 32px;">
                   <a href="${eventUrl}" style="background: #c79d4f; color: #32140c; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Réserver ma place</a>
                 </div>
@@ -105,11 +110,13 @@ export class NewsletterService {
             </div>
           `,
         });
-        console.log(`Newsletter sent to ${sub.email}`);
+        successCount++;
       } catch (e) {
+        failCount++;
         console.error(`Failed to notify ${sub.email}:`, e);
       }
     }
+    console.log(`Newsletter summary: ${successCount} sent, ${failCount} failed.`);
   }
 
   private async sendWelcomeEmail(email: string) {
