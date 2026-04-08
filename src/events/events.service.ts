@@ -62,32 +62,57 @@ export class EventsService {
   }
 
   async create(dto: CreateEventDto) {
+    const { sendNewsletter, ...eventData } = dto;
+    
+    // Set initial newsletter status based on sendNewsletter toggle
+    const status = sendNewsletter ? 'sent' : 'none';
+    
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('events')
-      .insert({ ...dto, currency: dto.currency || 'XAF' })
+      .insert({ ...eventData, currency: dto.currency || 'XAF', newsletter_status: status })
       .select()
       .single();
     if (error) throw new InternalServerErrorException(error.message);
 
-    // Notify newsletter subscribers in the background (no await)
-    this.newsletterService.notifyNewEvent(data).catch((e) => {
-      console.error('[BACKGROUND] Newsletter notification failed:', e.message);
-    });
+    // Only notify if toggle was ON
+    if (sendNewsletter) {
+      this.newsletterService.notifyNewEvent(data).catch((e) => {
+        console.error('[BACKGROUND] Newsletter notification failed:', e.message);
+      });
+    }
 
     return data;
   }
 
   async update(id: string, dto: UpdateEventDto) {
-    await this.findOne(id);
+    const oldEvent = await this.findOne(id);
+    const { sendNewsletter, ...eventData } = dto;
+
+    // Logic: if user toggles ON and it wasn't already sent, trigger send
+    const shouldSendNow = sendNewsletter && oldEvent.newsletter_status !== 'sent';
+    const newStatus = shouldSendNow ? 'sent' : oldEvent.newsletter_status;
+
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('events')
-      .update({ ...dto, updated_at: new Date().toISOString() })
+      .update({ 
+        ...eventData, 
+        updated_at: new Date().toISOString(),
+        newsletter_status: newStatus 
+      })
       .eq('id', id)
       .select()
       .single();
     if (error) throw new InternalServerErrorException(error.message);
+
+    // Execute background send if conditions are met
+    if (shouldSendNow) {
+      this.newsletterService.notifyNewEvent(data).catch((e) => {
+        console.error('[BACKGROUND] Manual Newsletter trigger failed:', e.message);
+      });
+    }
+
     return data;
   }
 

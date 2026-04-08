@@ -1,5 +1,5 @@
 import {
-  IsString, IsDateString, IsNumber, IsOptional, IsEnum, IsInt, Min, IsNotEmpty,
+  IsString, IsDateString, IsNumber, IsOptional, IsEnum, IsInt, Min, IsNotEmpty, IsBoolean
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
@@ -36,6 +36,12 @@ export class CreateEventDto {
 
   @ApiPropertyOptional({ example: '+241077617776' })
   @IsOptional() @IsString() whatsapp_number?: string;
+
+  @ApiPropertyOptional({ example: true, default: true })
+  @IsOptional() @IsBoolean() sendNewsletter?: boolean;
+
+  @ApiPropertyOptional({ example: 'none' })
+  @IsOptional() @IsString() newsletter_status?: string;
 }
 
 export class UpdateEventDto extends PartialType(CreateEventDto) {}
