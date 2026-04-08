@@ -107,7 +107,10 @@ export class NewsletterService {
                     <p style="margin: 8px 0 0; color: #32140c;"><strong>Heure:</strong> ${event.time || "Non précisée"}</p>
                     <p style="margin: 8px 0 0; color: #32140c;"><strong>Lieu:</strong> ${event.location}</p>
                   </div>
-                  <p style="color: #555; font-size: 14px; margin: 24px 0;">${event.description ? event.description.substring(0, 200) + '...' : ''}</p>
+                  <p style="color: #555; font-size: 14px; margin: 24px 0;">
+                    ${event.description ? event.description.substring(0, 200) + '... ' : ''}
+                    <a href="${eventUrl}" style="color: #c79d4f; text-decoration: underline; font-weight: bold;">Voir plus</a>
+                  </p>
                   <div style="text-align: center; margin-top: 32px;">
                     <a href="${eventUrl}" style="background: #c79d4f; color: #32140c; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Réserver ma place</a>
                   </div>
