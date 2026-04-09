@@ -65,9 +65,10 @@ export class EventsService {
   async create(dto: CreateEventDto) {
     const { sendNewsletter, ...eventData } = dto;
     
-    // Set initial newsletter status based on sendNewsletter toggle
-    const newsletterStatus = sendNewsletter ? 'sent' : 'none';
     const eventStatus = dto.status || 'brouillon';
+    // Only send if explicit toggle is ON AND status is 'publié'
+    const actuallySend = sendNewsletter && eventStatus === 'publié';
+    const newsletterStatus = actuallySend ? 'sent' : 'none';
     
     const { data, error } = await this.supabase
       .getAdminClient()
@@ -96,8 +97,10 @@ export class EventsService {
     const oldEvent = await this.findOne(id);
     const { sendNewsletter, ...eventData } = dto;
 
-    // Logic: if user toggles ON and it wasn't already sent, trigger send
-    const shouldSendNow = sendNewsletter && oldEvent.newsletter_status !== 'sent';
+    const eventStatus = dto.status || oldEvent.status;
+    
+    // Logic: if user toggles ON, it's not already sent, AND the target status is 'publié'
+    const shouldSendNow = sendNewsletter && oldEvent.newsletter_status !== 'sent' && eventStatus === 'publié';
     const newStatus = shouldSendNow ? 'sent' : oldEvent.newsletter_status;
 
     const { data, error } = await this.supabase
