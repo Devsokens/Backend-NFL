@@ -34,6 +34,7 @@ export class EventsService {
       .getAdminClient()
       .from('events')
       .select('*, tickets(status)')
+      .eq('status', 'publié')
       .gte('date', today)
       .order('date', { ascending: true });
     if (error) throw new InternalServerErrorException(error.message);
@@ -65,12 +66,18 @@ export class EventsService {
     const { sendNewsletter, ...eventData } = dto;
     
     // Set initial newsletter status based on sendNewsletter toggle
-    const status = sendNewsletter ? 'sent' : 'none';
+    const newsletterStatus = sendNewsletter ? 'sent' : 'none';
+    const eventStatus = dto.status || 'brouillon';
     
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('events')
-      .insert({ ...eventData, currency: dto.currency || 'XAF', newsletter_status: status })
+      .insert({ 
+        ...eventData, 
+        currency: dto.currency || 'XAF', 
+        newsletter_status: newsletterStatus,
+        status: eventStatus 
+      })
       .select()
       .single();
     if (error) throw new InternalServerErrorException(error.message);

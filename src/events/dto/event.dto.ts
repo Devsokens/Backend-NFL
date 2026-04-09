@@ -5,22 +5,22 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 export class CreateEventDto {
   @ApiProperty({ example: 'Forum Entreprises & Leadership', description: 'Titre de l\'événement' })
-  @IsString() @IsNotEmpty() title: string;
+  @IsString() @IsOptional() title?: string;
 
   @ApiPropertyOptional({ example: 'Journée professionnelle dédiée aux dirigeants...' })
   @IsOptional() @IsString() description?: string;
 
   @ApiProperty({ example: '2026-05-15', description: 'Date de l\'événement (YYYY-MM-DD)' })
-  @IsDateString() date: string;
+  @IsDateString() @IsOptional() date?: string;
 
   @ApiProperty({ example: '20:00', description: 'Heure (HH:MM)' })
-  @IsString() @IsNotEmpty() time: string;
+  @IsString() @IsOptional() time?: string;
 
   @ApiProperty({ example: 'Radisson Blu, Libreville', description: 'Lieu' })
-  @IsString() @IsNotEmpty() location: string;
+  @IsString() @IsOptional() location?: string;
 
   @ApiProperty({ example: 25000, description: 'Prix en XAF' })
-  @IsNumber() @Min(0) price: number;
+  @IsNumber() @Min(0) @IsOptional() price?: number;
 
   @ApiPropertyOptional({ example: 'XAF', default: 'XAF' })
   @IsOptional() @IsString() currency?: string;
@@ -28,14 +28,17 @@ export class CreateEventDto {
   @ApiPropertyOptional({ example: 'https://example.com/image.jpg' })
   @IsOptional() @IsString() image_url?: string;
 
-  @ApiPropertyOptional({ enum: ['soirée', 'conférence', 'atelier', 'concert'] })
-  @IsOptional() @IsEnum(['soirée', 'conférence', 'atelier', 'concert']) category?: string;
+  @ApiPropertyOptional({ enum: ['soirée', 'conférence', 'atelier', 'concert', 'seminaire'] })
+  @IsOptional() @IsEnum(['soirée', 'conférence', 'atelier', 'concert', 'seminaire']) category?: string;
 
   @ApiPropertyOptional({ example: 150 })
   @IsOptional() @IsInt() @Min(1) capacity?: number;
 
   @ApiPropertyOptional({ example: '+241077617776' })
   @IsOptional() @IsString() whatsapp_number?: string;
+
+  @ApiPropertyOptional({ example: 'brouillon', enum: ['publié', 'brouillon', 'annulé'] })
+  @IsOptional() @IsEnum(['publié', 'brouillon', 'annulé']) status?: string;
 
   @ApiPropertyOptional({ example: true, default: true })
   @IsOptional() @IsBoolean() sendNewsletter?: boolean;
