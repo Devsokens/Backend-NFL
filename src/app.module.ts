@@ -14,7 +14,7 @@ import { ContactModule } from './contact/contact.module';
     // Limite de débit globale : 10 requêtes par minute par point de terminaison pour prévenir le spam.
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 10,
+      limit: 120,
     }]),
     AuthModule,
     EventsModule,
