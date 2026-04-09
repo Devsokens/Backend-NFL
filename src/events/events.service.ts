@@ -111,7 +111,11 @@ export class EventsService {
       .eq('id', id)
       .select()
       .single();
-    if (error) throw new InternalServerErrorException(error.message);
+
+    if (error) {
+      console.error(`[EventsService] Update failed for event ${id}:`, error.message);
+      throw new InternalServerErrorException(`Erreur Database: ${error.message}`);
+    }
 
     // Execute background send if conditions are met
     if (shouldSendNow) {
