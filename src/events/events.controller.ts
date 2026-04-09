@@ -1,5 +1,4 @@
-import {
-  Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile, BadRequestException
+  Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Query, ParseBoolPipe
 } from '@nestjs/common';
 import {
   ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiConsumes, ApiBody
@@ -21,8 +20,8 @@ export class EventsController {
   @Get()
   @ApiOperation({ summary: 'Lister tous les événements', description: 'Retourne la liste complète des événements triés par date.' })
   @ApiResponse({ status: 200, description: 'Liste des événements.' })
-  findAll() {
-    return this.eventsService.findAll();
+  findAll(@Query('all', new ParseBoolPipe({ optional: true })) includeDrafts?: boolean) {
+    return this.eventsService.findAll(includeDrafts);
   }
 
   @Get('upcoming')

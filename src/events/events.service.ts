@@ -13,12 +13,18 @@ export class EventsService {
     private readonly newsletterService: NewsletterService,
   ) {}
 
-  async findAll() {
-    const { data, error } = await this.supabase
+  async findAll(includeDrafts = false) {
+    let query = this.supabase
       .getAdminClient()
       .from('events')
-      .select('*, tickets(status)')
-      .order('date', { ascending: true });
+      .select('*, tickets(status)');
+
+    if (!includeDrafts) {
+      query = query.eq('status', 'publié');
+    }
+
+    const { data, error } = await query.order('date', { ascending: true });
+    
     if (error) throw new InternalServerErrorException(error.message);
     return data.map((event: any) => ({
       ...event,
