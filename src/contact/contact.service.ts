@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import * as nodemailer from 'nodemailer';
+import axios from 'axios';
 
 @Injectable()
 export class ContactService {
@@ -53,15 +54,9 @@ export class ContactService {
     const senderEmail = process.env.BREVO_SENDER_EMAIL;
     const adminEmail = process.env.BREVO_SENDER_EMAIL; 
 
-    // 1. Notification to Admin
-    await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'api-key': process.env.BREVO_API_KEY || '',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
+    try {
+      // 1. Notification to Admin
+      await axios.post('https://api.brevo.com/v3/smtp/email', {
         sender: { email: senderEmail, name: "NFL Website Notification" },
         to: [{ email: adminEmail }],
         replyTo: { email: dto.email, name: dto.name },
@@ -78,18 +73,16 @@ export class ContactService {
             <p style="margin-top: 20px; font-size: 12px; color: #888;">Message envoyé depuis le formulaire de contact du site NFL.</p>
           </div>
         `
-      })
-    });
+      }, {
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY || '',
+          'content-type': 'application/json'
+        }
+      });
 
-    // 2. Confirmation to User
-    await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'api-key': process.env.BREVO_API_KEY || '',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
+      // 2. Confirmation to User
+      await axios.post('https://api.brevo.com/v3/smtp/email', {
         sender: { email: senderEmail, name: "NFL Courtier & Service" },
         to: [{ email: dto.email }],
         subject: 'Accusé de réception - Votre message pour NFL',
@@ -107,9 +100,18 @@ export class ContactService {
             </div>
           </div>
         `
-      })
-    });
+      }, {
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY || '',
+          'content-type': 'application/json'
+        }
+      });
 
-    console.log(`[CONTACT] E-mails envoyés via API pour : ${dto.email}`);
+      console.log(`[CONTACT] E-mails envoyés via API pour : ${dto.email}`);
+    } catch (e) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.message || e.message : e.message;
+      console.error(`[CONTACT] Error sending emails: ${msg}`);
+    }
   }
 }

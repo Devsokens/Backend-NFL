@@ -2,6 +2,7 @@ import { Injectable, ConflictException, InternalServerErrorException, Logger } f
 import { SupabaseService } from '../supabase.service';
 import { SubscribeNewsletterDto } from './dto/newsletter.dto';
 import { SendManualNewsletterDto } from './dto/send-newsletter.dto';
+import axios from 'axios';
 
 @Injectable()
 export class NewsletterService {
@@ -84,51 +85,42 @@ export class NewsletterService {
     let successCount = 0;
     let failCount = 0;
 
-    // Send emails (chunked or individual)
-    // Using individual for simplicity and per-user tracking as per previous logic
     for (const email of recipientEmails) {
       try {
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
+        await axios.post('https://api.brevo.com/v3/smtp/email', {
+          sender: { 
+            email: process.env.BREVO_SENDER_EMAIL, 
+            name: "NFL Courtier & Service" 
+          },
+          to: [{ email }],
+          subject: subject,
+          htmlContent: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
+              <div style="background: #32140c; padding: 32px; text-align: center;">
+                <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
+              </div>
+              <div style="padding: 32px;">
+                ${content}
+                <p style="color: #999; font-size: 11px; margin-top: 40px; text-align: center; border-top: 1px solid #eee; pt: 20px;">
+                  Vous recevez cet email car vous êtes abonné à la newsletter NFL. 
+                  <br/> NFL Courtier & Service - Libreville, Gabon
+                </p>
+              </div>
+            </div>
+          `
+        }, {
           headers: {
             'accept': 'application/json',
             'api-key': process.env.BREVO_API_KEY || '',
             'content-type': 'application/json'
-          },
-          body: JSON.stringify({
-            sender: { 
-              email: process.env.BREVO_SENDER_EMAIL, 
-              name: "NFL Courtier & Service" 
-            },
-            to: [{ email }],
-            subject: subject,
-            htmlContent: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
-                <div style="background: #32140c; padding: 32px; text-align: center;">
-                  <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
-                </div>
-                <div style="padding: 32px;">
-                  ${content}
-                  <p style="color: #999; font-size: 11px; margin-top: 40px; text-align: center; border-top: 1px solid #eee; pt: 20px;">
-                    Vous recevez cet email car vous êtes abonné à la newsletter NFL. 
-                    <br/> NFL Courtier & Service - Libreville, Gabon
-                  </p>
-                </div>
-              </div>
-            `
-          })
+          }
         });
 
-        if (!response.ok) {
-          const errData = await response.json();
-          this.logger.error(`Brevo API Error for ${email}: ${errData.message}`);
-          failCount++;
-        } else {
-          successCount++;
-        }
+        successCount++;
       } catch (e) {
         failCount++;
-        this.logger.error(`Failed to send to ${email}: ${e.message}`);
+        const msg = axios.isAxiosError(e) ? e.response?.data?.message || e.message : e.message;
+        this.logger.error(`Failed to send to ${email}: ${msg}`);
       }
     }
 
@@ -181,56 +173,50 @@ export class NewsletterService {
         const frontendUrl = process.env.FRONTEND_URL || 'https://nfl-ga.vercel.app';
         const eventUrl = `${frontendUrl}/event/${event.id}`;
 
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
+        await axios.post('https://api.brevo.com/v3/smtp/email', {
+          sender: { 
+            email: process.env.BREVO_SENDER_EMAIL, 
+            name: "NFL Courtier & Service" 
+          },
+          to: [{ email: sub.email }],
+          subject: `Nouvel Evénement : ${event.title}`,
+          htmlContent: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
+              <div style="background: #32140c; padding: 32px; text-align: center;">
+                <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
+              </div>
+              <div style="padding: 32px;">
+                <h2 style="color: #32140c;">Découvrez notre nouvel événement !</h2>
+                <p style="color: #555; font-size: 16px;">Nous avons le plaisir de vous annoncer l'ouverture des réservations pour : <strong>${event.title}</strong>.</p>
+                <div style="background: #f9f5ee; border-left: 4px solid #c79d4f; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                  <p style="margin: 0; color: #32140c;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('fr-FR')}</p>
+                  <p style="margin: 8px 0 0; color: #32140c;"><strong>Heure:</strong> ${event.time || "Non précisée"}</p>
+                  <p style="margin: 8px 0 0; color: #32140c;"><strong>Lieu:</strong> ${event.location}</p>
+                </div>
+                <p style="color: #555; font-size: 14px; margin: 24px 0;">
+                  ${event.description ? event.description.substring(0, 200) + '... ' : ''}
+                  <a href="${eventUrl}" style="color: #c79d4f; text-decoration: underline; font-weight: bold;">Voir plus</a>
+                </p>
+                <div style="text-align: center; margin-top: 32px;">
+                  <a href="${eventUrl}" style="background: #c79d4f; color: #32140c; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Réserver ma place</a>
+                </div>
+                <p style="color: #999; font-size: 12px; margin-top: 32px; text-align: center;">Vous recevez cet email car vous êtes abonné à la newsletter NFL.</p>
+              </div>
+            </div>
+          `
+        }, {
           headers: {
             'accept': 'application/json',
             'api-key': process.env.BREVO_API_KEY || '',
             'content-type': 'application/json'
-          },
-          body: JSON.stringify({
-            sender: { 
-              email: process.env.BREVO_SENDER_EMAIL, 
-              name: "NFL Courtier & Service" 
-            },
-            to: [{ email: sub.email }],
-            subject: `Nouvel Evénement : ${event.title}`,
-            htmlContent: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
-                <div style="background: #32140c; padding: 32px; text-align: center;">
-                  <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
-                </div>
-                <div style="padding: 32px;">
-                  <h2 style="color: #32140c;">Découvrez notre nouvel événement !</h2>
-                  <p style="color: #555; font-size: 16px;">Nous avons le plaisir de vous annoncer l'ouverture des réservations pour : <strong>${event.title}</strong>.</p>
-                  <div style="background: #f9f5ee; border-left: 4px solid #c79d4f; padding: 20px; border-radius: 8px; margin: 24px 0;">
-                    <p style="margin: 0; color: #32140c;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('fr-FR')}</p>
-                    <p style="margin: 8px 0 0; color: #32140c;"><strong>Heure:</strong> ${event.time || "Non précisée"}</p>
-                    <p style="margin: 8px 0 0; color: #32140c;"><strong>Lieu:</strong> ${event.location}</p>
-                  </div>
-                  <p style="color: #555; font-size: 14px; margin: 24px 0;">
-                    ${event.description ? event.description.substring(0, 200) + '... ' : ''}
-                    <a href="${eventUrl}" style="color: #c79d4f; text-decoration: underline; font-weight: bold;">Voir plus</a>
-                  </p>
-                  <div style="text-align: center; margin-top: 32px;">
-                    <a href="${eventUrl}" style="background: #c79d4f; color: #32140c; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Réserver ma place</a>
-                  </div>
-                  <p style="color: #999; font-size: 12px; margin-top: 32px; text-align: center;">Vous recevez cet email car vous êtes abonné à la newsletter NFL.</p>
-                </div>
-              </div>
-            `
-          })
+          }
         });
-
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(`Erreur API Brevo HTTP: ${errData.message || 'Requête rejetée'}`);
-        }
 
         successCount++;
       } catch (e) {
         failCount++;
-        this.logger.error(`[NEWSLETTER] ❌ Échec pour ${sub.email}: ${e.message}`);
+        const msg = axios.isAxiosError(e) ? e.response?.data?.message || e.message : e.message;
+        this.logger.error(`[NEWSLETTER] ❌ Échec pour ${sub.email}: ${msg}`);
       }
     }
 
@@ -250,14 +236,8 @@ export class NewsletterService {
   }
 
   private async sendWelcomeEmail(email: string) {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'api-key': process.env.BREVO_API_KEY || '',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
+    try {
+      await axios.post('https://api.brevo.com/v3/smtp/email', {
         sender: { 
           email: process.env.BREVO_SENDER_EMAIL, 
           name: "NFL Courtier & Service" 
@@ -276,13 +256,18 @@ export class NewsletterService {
             </div>
           </div>
         `
-      })
-    });
-
-    if (!response.ok) {
-      const errData = await response.json();
-      this.logger.error(`Welcome email API Error: ${JSON.stringify(errData)}`);
+      }, {
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY || '',
+          'content-type': 'application/json'
+        }
+      });
+    } catch (e) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.message || JSON.stringify(e.response?.data) : e.message;
+      this.logger.error(`Welcome email API Error: ${msg}`);
     }
   }
 }
+
 
