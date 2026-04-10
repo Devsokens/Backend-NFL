@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@ne
 import { AuthGuard } from '@nestjs/passport';
 import { NewsletterService } from './newsletter.service';
 import { SubscribeNewsletterDto } from './dto/newsletter.dto';
+import { SendManualNewsletterDto } from './dto/send-newsletter.dto';
 
 @ApiTags('Newsletter')
 @Controller('newsletter')
@@ -24,9 +25,27 @@ export class NewsletterController {
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '[Admin] Lister tous les abonnés', description: 'Retourne la liste complète des abonnés à la newsletter.' })
-  @ApiResponse({ status: 200, description: 'Liste des abonnés.', schema: { example: { count: 42, subscribers: [{ id: 'uuid', email: 'user@example.com', created_at: '2026-04-01' }] } } })
+  @ApiResponse({ status: 200, description: 'Liste des abonnés.' })
   findAll() {
     return this.newsletterService.findAll();
+  }
+
+  @Get('history')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] Historique des newsletters', description: 'Retourne l\'historique des newsletters envoyées manuellement.' })
+  @ApiResponse({ status: 200, description: 'Liste de l\'historique.' })
+  getHistory() {
+    return this.newsletterService.getHistory();
+  }
+
+  @Post('send')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] Envoyer une newsletter manuelle', description: 'Envoie un email personnalisé à une liste de destinataires.' })
+  @ApiResponse({ status: 201, description: 'Newsletter envoyée avec succès.' })
+  sendNewsletter(@Body() dto: SendManualNewsletterDto) {
+    return this.newsletterService.sendManualNewsletter(dto);
   }
 
   @Delete(':email')
@@ -39,3 +58,4 @@ export class NewsletterController {
     return this.newsletterService.unsubscribe(email);
   }
 }
+

@@ -1,10 +1,12 @@
-import { Injectable, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, ConflictException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
 import { SubscribeNewsletterDto } from './dto/newsletter.dto';
-import * as nodemailer from 'nodemailer';
+import { SendManualNewsletterDto } from './dto/send-newsletter.dto';
 
 @Injectable()
 export class NewsletterService {
+  private readonly logger = new Logger(NewsletterService.name);
+
   constructor(private readonly supabase: SupabaseService) {}
 
   async subscribe(dto: SubscribeNewsletterDto) {
@@ -28,7 +30,7 @@ export class NewsletterService {
     if (error) throw new InternalServerErrorException(error.message);
 
     // Send welcome email (Non-blocking)
-    this.sendWelcomeEmail(dto.email).catch(e => console.error('Welcome email failed:', e));
+    this.sendWelcomeEmail(dto.email).catch(e => this.logger.error('Welcome email failed:', e));
 
     return { message: 'Abonnement confirmé ! Bienvenue dans la newsletter NFL 🎉', data };
   }
@@ -53,6 +55,106 @@ export class NewsletterService {
     return { message: `${email} a été désabonné avec succès.` };
   }
 
+  async getHistory() {
+    const { data, error } = await this.supabase
+      .getAdminClient()
+      .from('newsletter_history')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      // If table doesn't exist yet, return empty
+      if (error.code === 'PGRST116' || error.message.includes('relation "newsletter_history" does not exist')) {
+        return [];
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+    return data;
+  }
+
+  async sendManualNewsletter(dto: SendManualNewsletterDto) {
+    const { subject, content, recipientEmails } = dto;
+
+    if (!recipientEmails || recipientEmails.length === 0) {
+      throw new ConflictException('Aucun destinataire sélectionné.');
+    }
+
+    this.logger.log(`[MANUAL-NEWSLETTER] Envoi de "${subject}" à ${recipientEmails.length} personnes.`);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    // Send emails (chunked or individual)
+    // Using individual for simplicity and per-user tracking as per previous logic
+    for (const email of recipientEmails) {
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'api-key': process.env.BREVO_API_KEY || '',
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender: { 
+              email: process.env.BREVO_SENDER_EMAIL, 
+              name: "NFL Courtier & Service" 
+            },
+            to: [{ email }],
+            subject: subject,
+            htmlContent: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
+                <div style="background: #32140c; padding: 32px; text-align: center;">
+                  <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
+                </div>
+                <div style="padding: 32px;">
+                  ${content}
+                  <p style="color: #999; font-size: 11px; margin-top: 40px; text-align: center; border-top: 1px solid #eee; pt: 20px;">
+                    Vous recevez cet email car vous êtes abonné à la newsletter NFL. 
+                    <br/> NFL Courtier & Service - Libreville, Gabon
+                  </p>
+                </div>
+              </div>
+            `
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          this.logger.error(`Brevo API Error for ${email}: ${errData.message}`);
+          failCount++;
+        } else {
+          successCount++;
+        }
+      } catch (e) {
+        failCount++;
+        this.logger.error(`Failed to send to ${email}: ${e.message}`);
+      }
+    }
+
+    // Save to history
+    try {
+      await this.supabase
+        .getAdminClient()
+        .from('newsletter_history')
+        .insert({
+          subject,
+          content,
+          recipient_count: recipientEmails.length,
+          success_count: successCount,
+          fail_count: failCount
+        });
+    } catch (e) {
+      this.logger.error('Failed to log newsletter history:', e.message);
+    }
+
+    return {
+      message: `Envoi terminé. Succès: ${successCount}, Échecs: ${failCount}`,
+      successCount,
+      failCount
+    };
+  }
+
   async notifyNewEvent(event: any) {
     const { data: subscribers, error } = await this.supabase
       .getAdminClient()
@@ -60,17 +162,16 @@ export class NewsletterService {
       .select('email');
 
     if (error) {
-      console.error('Error fetching subscribers:', error);
+      this.logger.error('Error fetching subscribers:', error);
       return;
     }
     
     if (!subscribers || subscribers.length === 0) {
-      console.log('No newsletter subscribers found to notify.');
+      this.logger.log('No newsletter subscribers found to notify.');
       return;
     }
 
-    console.log(`[NEWSLETTER] Démarrage de l'envoi pour l'événement "${event.title}"`);
-    console.log(`[NEWSLETTER] Nombre d'abonnés à notifier : ${subscribers.length}`);
+    this.logger.log(`[NEWSLETTER] Démarrage de l'envoi pour l'événement "${event.title}"`);
 
     let successCount = 0;
     let failCount = 0;
@@ -127,15 +228,13 @@ export class NewsletterService {
         }
 
         successCount++;
-        console.log(`[NEWSLETTER] ✅ Mail via API envoyé à : ${sub.email}`);
       } catch (e) {
         failCount++;
-        console.error(`[NEWSLETTER] ❌ Échec pour ${sub.email}:`, e.message);
+        this.logger.error(`[NEWSLETTER] ❌ Échec pour ${sub.email}: ${e.message}`);
       }
     }
-    console.log(`[NEWSLETTER] Synthèse : ${successCount} envoyés, ${failCount} échecs.`);
 
-    // Mise à jour du statut de l'événement pour notifier le frontend via Realtime
+    // Update event status
     try {
       await this.supabase
         .getAdminClient()
@@ -145,9 +244,8 @@ export class NewsletterService {
           newsletter_sent_at: new Date().toISOString() 
         })
         .eq('id', event.id);
-      console.log(`[NEWSLETTER] Statut de l'événement ${event.id} mis à jour : 'sent'`);
     } catch (dbErr) {
-      console.error(`[NEWSLETTER] Erreur mise à jour statut DB :`, dbErr.message);
+      this.logger.error(`[NEWSLETTER] Erreur mise à jour statut DB : ${dbErr.message}`);
     }
   }
 
@@ -183,9 +281,8 @@ export class NewsletterService {
 
     if (!response.ok) {
       const errData = await response.json();
-      console.error(`Welcome email API Error:`, errData);
-    } else {
-      console.log(`Welcome email via API sent to ${email}`);
+      this.logger.error(`Welcome email API Error: ${JSON.stringify(errData)}`);
     }
   }
 }
+
