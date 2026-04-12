@@ -41,39 +41,54 @@ export class AnalyticsService {
       throw error;
     }
 
-    // Agrégation par jour pour le graphique
-    const statsByDay: Record<string, number> = {};
-    
-    // Initialiser les 7 derniers jours à 0 pour avoir un beau graphique même s'il manque des jours
+    // Agrégation pour 7 jours
+    const stats7Days: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      statsByDay[dateStr] = 0;
+      stats7Days[d.toISOString().split('T')[0]] = 0;
+    }
+
+    // Agrégation pour 30 jours
+    const stats30Days: Record<string, number> = {};
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      stats30Days[d.toISOString().split('T')[0]] = 0;
     }
 
     if (data) {
       data.forEach(visit => {
         const dateStr = new Date(visit.created_at).toISOString().split('T')[0];
-        // On ne compte que si on suit ce jour
-        if (statsByDay[dateStr] !== undefined) {
-          statsByDay[dateStr]++;
-        } else if (statsByDay[dateStr] === undefined && new Date(dateStr) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) {
-           // Si c'est dans les 7 derniers jours mais pas initialisé (cas rare dû aux fuseaux horaires), on initialise
-           statsByDay[dateStr] = 1;
+        
+        if (stats30Days[dateStr] !== undefined) {
+          stats30Days[dateStr]++;
+        } else if (new Date(dateStr) >= thirtyDaysAgo) {
+          stats30Days[dateStr] = 1;
+        }
+
+        if (stats7Days[dateStr] !== undefined) {
+          stats7Days[dateStr]++;
+        } else if (new Date(dateStr) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) {
+           stats7Days[dateStr] = 1;
         }
       });
     }
 
-    // Format pour Recharts: [{ date: '2023-10-01', visites: 12 }, ...]
-    const chartData = Object.entries(statsByDay).map(([date, visites]) => ({
+    const chartData7Days = Object.entries(stats7Days).map(([date, visites]) => ({
+      date: new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
+      visites
+    }));
+
+    const chartData30Days = Object.entries(stats30Days).map(([date, visites]) => ({
       date: new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
       visites
     }));
 
     return {
       totalVisits: data ? data.length : 0,
-      chartData
+      chartData7Days,
+      chartData30Days
     };
   }
 }
