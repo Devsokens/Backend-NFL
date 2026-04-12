@@ -74,10 +74,9 @@ export class NewsletterService {
   }
 
   async sendManualNewsletter(dto: SendManualNewsletterDto) {
-    const { subject, content, recipientEmails } = dto;
+    const { subject, content, recipientEmails, attachmentUrl, attachmentName } = dto;
 
-    if (!recipientEmails || recipientEmails.length === 0) {
-      throw new ConflictException('Aucun destinataire sélectionné.');
+    if (!recipientEmails || recipientEmails.length === 0) {      throw new ConflictException('Aucun destinataire sélectionné.');
     }
 
     this.logger.log(`[MANUAL-NEWSLETTER] Envoi de "${subject}" à ${recipientEmails.length} personnes.`);
@@ -107,7 +106,15 @@ export class NewsletterService {
                 </p>
               </div>
             </div>
-          `
+          `,
+          ...(attachmentUrl && {
+            attachment: [
+              {
+                url: attachmentUrl,
+                name: attachmentName || "document.pdf"
+              }
+            ]
+          })
         }, {
           headers: {
             'accept': 'application/json',

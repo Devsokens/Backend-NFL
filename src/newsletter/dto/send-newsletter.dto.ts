@@ -16,4 +16,14 @@ export class SendManualNewsletterDto {
   @IsArray()
   @IsString({ each: true })
   recipientEmails: string[];
+
+  @ApiProperty({ example: 'https://cdn.example.com/file.pdf', description: 'URL de la pièce jointe', required: false })
+  @IsOptional()
+  @IsString()
+  attachmentUrl?: string;
+
+  @ApiProperty({ example: 'document.pdf', description: 'Nom de la pièce jointe', required: false })
+  @IsOptional()
+  @IsString()
+  attachmentName?: string;
 }
