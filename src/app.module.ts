@@ -7,6 +7,7 @@ import { EventsModule } from './events/events.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { ContactModule } from './contact/contact.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ContactModule } from './contact/contact.module';
     TicketsModule,
     NewsletterModule,
     ContactModule,
+    AnalyticsModule,
   ],
   providers: [
     {
