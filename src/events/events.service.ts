@@ -8,14 +8,12 @@ import { NewsletterService } from '../newsletter/newsletter.service';
 
 function generateSlug(title?: string): string {
   if (!title) return Math.random().toString(36).substring(2, 10);
-  const baseSlug = title
+  return title
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
-  const randomString = Math.random().toString(36).substring(2, 6);
-  return `${baseSlug}-${randomString}`;
 }
 
 @Injectable()
