@@ -6,6 +6,18 @@ import { CreateEventDto, UpdateEventDto } from './dto/event.dto';
 
 import { NewsletterService } from '../newsletter/newsletter.service';
 
+function generateSlug(title: string): string {
+  if (!title) return Math.random().toString(36).substring(2, 10);
+  const baseSlug = title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+  const randomString = Math.random().toString(36).substring(2, 6);
+  return `${baseSlug}-${randomString}`;
+}
+
 @Injectable()
 export class EventsService {
   constructor(
@@ -53,13 +65,21 @@ export class EventsService {
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabase
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    
+    let query = this.supabase
       .getAdminClient()
       .from('events')
-      .select('*, tickets(id, status)')
-      .eq('id', id)
-      .single();
-    if (error || !data) throw new NotFoundException(`Événement #${id} introuvable`);
+      .select('*, tickets(id, status)');
+      
+    if (isUuid) {
+      query = query.eq('id', id);
+    } else {
+      query = query.eq('slug', id);
+    }
+
+    const { data, error } = await query.single();
+    if (error || !data) throw new NotFoundException(`Événement introuvable`);
     return {
       ...data,
       ticketsSold: data.tickets?.filter((t: any) => 
@@ -75,6 +95,7 @@ export class EventsService {
     // Only send if explicit toggle is ON AND status is 'publié'
     const actuallySend = sendNewsletter && eventStatus === 'publié';
     const newsletterStatus = actuallySend ? 'sent' : 'none';
+    const slug = generateSlug(eventData.title);
     
     const { data, error } = await this.supabase
       .getAdminClient()
@@ -83,7 +104,8 @@ export class EventsService {
         ...eventData, 
         currency: dto.currency || 'XAF', 
         newsletter_status: newsletterStatus,
-        status: eventStatus 
+        status: eventStatus,
+        slug
       })
       .select()
       .single();
@@ -108,15 +130,16 @@ export class EventsService {
     // Logic: if user toggles ON, it's not already sent, AND the target status is 'publié'
     const shouldSendNow = sendNewsletter && oldEvent.newsletter_status !== 'sent' && eventStatus === 'publié';
     const newStatus = shouldSendNow ? 'sent' : oldEvent.newsletter_status;
+    const updatePayload: any = { ...eventData, updated_at: new Date().toISOString(), newsletter_status: newStatus };
+    
+    if (!oldEvent.slug && eventData.title) {
+       updatePayload.slug = generateSlug(eventData.title);
+    }
 
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('events')
-      .update({ 
-        ...eventData, 
-        updated_at: new Date().toISOString(),
-        newsletter_status: newStatus 
-      })
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single();
@@ -148,11 +171,12 @@ export class EventsService {
   }
 
   async getStats(id: string) {
+    const event = await this.findOne(id); // Use findOne to handle slug/UUID resolution securely
     const { data, error } = await this.supabase
       .getAdminClient()
       .from('tickets')
       .select('status')
-      .eq('event_id', id);
+      .eq('event_id', event.id);
     if (error) throw new InternalServerErrorException(error.message);
     const stats = { total: data.length, validé: 0, utilisé: 0, annulé: 0, soumis: 0 };
     data.forEach((t) => { if (t.status in stats) stats[t.status]++; });
