@@ -6,7 +6,7 @@ import { CreateEventDto, UpdateEventDto } from './dto/event.dto';
 
 import { NewsletterService } from '../newsletter/newsletter.service';
 
-function generateSlug(title: string): string {
+function generateSlug(title?: string): string {
   if (!title) return Math.random().toString(36).substring(2, 10);
   const baseSlug = title
     .toLowerCase()
