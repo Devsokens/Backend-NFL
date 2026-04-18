@@ -134,7 +134,7 @@ export class CertificatesService {
     const fullThemeText = `"${theme}"`;
     const themeWords = fullThemeText.split(' ');
     
-    let themeLines = [];
+    let themeLines: string[] = [];
     let currentThemeLine = '';
 
     for (const word of themeWords) {
