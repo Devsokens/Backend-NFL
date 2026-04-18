@@ -99,8 +99,8 @@ export class CertificatesService {
     // Le Thème est environ au centre de la page en hauteur (Gommage élargi aux extrémités)
     page.drawRectangle({ x: width * 0.08, y: height * 0.43, width: width * 0.84, height: height * 0.15, color: bgColor });
     
-    // La Date: ramenée légèrement vers la gauche (x: 0.21 au lieu de 0.23) et remontée (y: 0.19 au lieu de 0.18)
-    page.drawRectangle({ x: width * 0.21, y: height * 0.19, width: 140, height: 45, color: bgColor });
+    // La Date: on l'étend plus à gauche pour bien cacher le "18" (x: 0.195) et plus haut (y: 0.192)
+    page.drawRectangle({ x: width * 0.195, y: height * 0.192, width: 160, height: 45, color: bgColor });
 
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
@@ -174,8 +174,8 @@ export class CertificatesService {
 
     // 3. Date
     page.drawText(dateStr, {
-      x: width * 0.22, // Légèrement décalé à droite dans son masque
-      y: height * 0.20,
+      x: width * 0.23, // Décalé vers la droite pour bien s'aligner sous DÉLIVRÉ LE
+      y: height * 0.205, // Remonté légèrement
       size: Math.max(14, width * 0.02),
       font: fontBold,
       color: rgb(0.2, 0.08, 0.05),
