@@ -93,13 +93,14 @@ export class CertificatesService {
     // -----------------------------------------------------
     // MASQUAGE DU TEXTE FICTIF
     // -----------------------------------------------------
-    const bgColor = rgb(0.992, 0.984, 0.949); 
+    // Nouvelle couleur de fond d'après le template Paysage : beige/saumon clair #F9F0EF
+    const bgColor = rgb(0.976, 0.941, 0.937); 
     
-    // Le Thème est environ au centre de la page en hauteur
-    page.drawRectangle({ x: width * 0.15, y: height * 0.45, width: width * 0.7, height: height * 0.12, color: bgColor });
+    // Le Thème est environ au centre de la page en hauteur (Gommage élargi aux extrémités)
+    page.drawRectangle({ x: width * 0.08, y: height * 0.43, width: width * 0.84, height: height * 0.15, color: bgColor });
     
-    // La Date: on suppose qu'elle est en bas à gauche (~25% X, ~20% Y)
-    page.drawRectangle({ x: width * 0.20, y: height * 0.18, width: 150, height: 40, color: bgColor });
+    // La Date: on suppose qu'elle est en bas à gauche (~25% X, ~20% Y) - Ramenée vers la droite pour éviter l'icône
+    page.drawRectangle({ x: width * 0.23, y: height * 0.18, width: 140, height: 45, color: bgColor });
 
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
