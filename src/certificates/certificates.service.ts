@@ -88,6 +88,27 @@ export class CertificatesService {
       height: height,
     });
 
+    // -----------------------------------------------------
+    // MASQUAGE DU TEXTE FICTIF (Draw rectangles to hide template text)
+    // -----------------------------------------------------
+    const bgColor = rgb(0.99, 0.98, 0.96); // Couleur approximative du fond (beige très clair)
+    
+    // 1. Masquer [PRÉNOM NOM]
+    page.drawRectangle({ x: 50, y: 490, width: 500, height: 65, color: bgColor });
+    
+    // 2. Masquer le Thème ("Motivation, Démotivation...")
+    page.drawRectangle({ x: 50, y: 390, width: 500, height: 75, color: bgColor });
+    
+    // 3. Masquer la Date (18 avril 2026)
+    page.drawRectangle({ x: 190, y: 190, width: 130, height: 30, color: bgColor });
+    
+    // 4. Masquer [VILLE]
+    page.drawRectangle({ x: 350, y: 190, width: 130, height: 30, color: bgColor });
+    
+    // -----------------------------------------------------
+    // ÉCRITURE DU TEXTE DYNAMIQUE
+    // -----------------------------------------------------
+
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
@@ -101,36 +122,67 @@ export class CertificatesService {
     const nameWidth = fontBold.widthOfTextAtSize(name, nameSize);
     page.drawText(name, {
       x: (width - nameWidth) / 2,
-      y: 515, // Coordonnée Y estimée pour le milieu du certificat
+      y: 510,
       size: nameSize,
       font: fontBold,
       color: rgb(0.2, 0.08, 0.05), // #32140c
     });
 
-    // 2. Thème (Masterclass title) - Centré
-    const themeText = `"${theme}"`;
-    const themeSize = 22;
-    const themeWidth = fontBold.widthOfTextAtSize(themeText, themeSize);
-    page.drawText(themeText, {
-      x: (width - themeWidth) / 2,
-      y: 410, // Coordonnée Y estimée
-      size: themeSize,
-      font: fontBold,
-      color: rgb(0.78, 0.62, 0.31), // #c79d4f
+    // 2. Thème - Centré avec gestion des textes longs (retour à la ligne automatique)
+    const themeSize = 20;
+    const maxThemeWidth = 480;
+    const fullThemeText = `"${theme}"`;
+    const themeWords = fullThemeText.split(' ');
+    
+    let themeLines = [];
+    let currentThemeLine = '';
+
+    for (const word of themeWords) {
+      const testLine = currentThemeLine.length === 0 ? word : currentThemeLine + ' ' + word;
+      const testWidth = fontBold.widthOfTextAtSize(testLine, themeSize);
+      if (testWidth > maxThemeWidth && currentThemeLine.length > 0) {
+        themeLines.push(currentThemeLine);
+        currentThemeLine = word;
+      } else {
+        currentThemeLine = testLine;
+      }
+    }
+    if (currentThemeLine.length > 0) {
+      themeLines.push(currentThemeLine);
+    }
+
+    const themeLineHeight = themeSize * 1.4;
+    // Ajuster le Y initial si on a plusieurs lignes pour rester centré dans la zone beige
+    let themeStartY = 420;
+    if (themeLines.length > 1) {
+       themeStartY += ((themeLines.length - 1) * themeLineHeight) / 2;
+    }
+
+    themeLines.forEach((line, index) => {
+      const lineWidth = fontBold.widthOfTextAtSize(line, themeSize);
+      page.drawText(line, {
+        x: (width - lineWidth) / 2,
+        y: themeStartY - (index * themeLineHeight),
+        size: themeSize,
+        font: fontBold,
+        color: rgb(0.78, 0.62, 0.31), // #c79d4f
+      });
     });
 
-    // 3. Date - Alignée à gauche du bloc date (DÉLIVRÉ LE)
+    // 3. Date
     page.drawText(dateStr, {
-      x: 200, 
+      x: 195, 
       y: 200,
       size: 14,
       font: fontBold,
       color: rgb(0.2, 0.08, 0.05),
     });
 
-    // 4. Lieu (Ville) - Optionnel
+    // 4. Lieu (Ville)
     if (event.location) {
-        page.drawText(event.location, {
+        // Prendre juste le nom principal de la ville si c'est long
+        const locationShort = event.location.split(',')[0];
+        page.drawText(locationShort, {
             x: 360,
             y: 200,
             size: 14,
