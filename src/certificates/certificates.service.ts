@@ -91,17 +91,6 @@ export class CertificatesService {
     });
 
     // -----------------------------------------------------
-    // MASQUAGE DU TEXTE FICTIF
-    // -----------------------------------------------------
-    // Nouvelle couleur de fond d'après le template Paysage : beige/saumon clair #F9F0EF
-    const bgColor = rgb(0.976, 0.941, 0.937); 
-    
-    // Le Thème est environ au centre de la page en hauteur (Gommage élargi aux extrémités)
-    page.drawRectangle({ x: width * 0.08, y: height * 0.43, width: width * 0.84, height: height * 0.15, color: bgColor });
-    
-    // Remarque : Le gommage de la Date a été retiré pour utiliser la date native de l'image.
-
-    // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
     // -----------------------------------------------------
 
@@ -110,9 +99,7 @@ export class CertificatesService {
 
     // Dynamic Texts
     const name = (ticket.full_name || ticket.name || "Participant").toUpperCase();
-    const theme = event.title;
-    // La variable dateStr n'est plus utilisée pour l'affichage visuel, mais reste conservée ici logiciellement
-
+    
     // 1. [PRÉNOM NOM] - Centré Horizontalement, plus haut sur la page (Y ~ 60%)
     let nameSize = Math.max(34, width * 0.04);
     let nameWidth = fontBold.widthOfTextAtSize(name, nameSize);
@@ -131,45 +118,7 @@ export class CertificatesService {
       color: rgb(0.2, 0.08, 0.05), // #32140c
     });
 
-    // 2. Thème - Centré bas avec l'algorithme multiligne (Y ~ 48%)
-    const themeSize = Math.max(20, width * 0.025);
-    const maxThemeWidth = width * 0.8;
-    const fullThemeText = `"${theme}"`;
-    const themeWords = fullThemeText.split(' ');
-    
-    let themeLines: string[] = [];
-    let currentThemeLine = '';
-
-    for (const word of themeWords) {
-      const testLine = currentThemeLine.length === 0 ? word : currentThemeLine + ' ' + word;
-      const testWidth = fontBold.widthOfTextAtSize(testLine, themeSize);
-      if (testWidth > maxThemeWidth && currentThemeLine.length > 0) {
-        themeLines.push(currentThemeLine);
-        currentThemeLine = word;
-      } else {
-        currentThemeLine = testLine;
-      }
-    }
-    if (currentThemeLine.length > 0) {
-      themeLines.push(currentThemeLine);
-    }
-
-    const themeLineHeight = themeSize * 1.4;
-    let themeStartY = height * 0.50; // Approximatif
-    if (themeLines.length > 1) {
-       themeStartY += ((themeLines.length - 1) * themeLineHeight) / 2;
-    }
-
-    themeLines.forEach((line, index) => {
-      const lineWidth = fontBold.widthOfTextAtSize(line, themeSize);
-      page.drawText(line, {
-        x: (width - lineWidth) / 2,
-        y: themeStartY - (index * themeLineHeight),
-        size: themeSize,
-        font: fontBold,
-        color: rgb(0.78, 0.62, 0.31), // #c79d4f
-      });
-    });
+    // Remarque : Le Thème n'est plus dessiné dynamiquement, on conserve celui natif dans l'image.
 
     // Remarque : La Date n'est plus dessinée dynamiquement, on conserve la date native de l'image.
 
