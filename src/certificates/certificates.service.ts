@@ -5,6 +5,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
 
+import * as qrcode from 'qrcode';
+
 @Injectable()
 export class CertificatesService {
   private readonly logger = new Logger(CertificatesService.name);
@@ -75,7 +77,6 @@ export class CertificatesService {
 
   private async createCertificatePdf(event: any, ticket: any, templateBytes: Buffer) {
     // On crée un PDF au format A4 approximatif (basé sur le ratio de l'image si possible)
-    // Ici on fixe une taille raisonnable
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([600, 850]); 
     const { width, height } = page.getSize();
@@ -91,20 +92,23 @@ export class CertificatesService {
     // -----------------------------------------------------
     // MASQUAGE DU TEXTE FICTIF (Draw rectangles to hide template text)
     // -----------------------------------------------------
-    // Ajustement de la couleur pour coller parfaitement au fond parchemin du certificat (#FDFBF2 environ)
-    const bgColor = rgb(0.992, 0.984, 0.949); 
+    // Nouvelle tentative de couleur pour coller parfaitement au fond (#FEFCF6 environ)
+    const bgColor = rgb(0.996, 0.988, 0.965); 
     
-    // 1. Masquer [PRÉNOM NOM] (réduit sur les bords)
-    page.drawRectangle({ x: 80, y: 490, width: 440, height: 65, color: bgColor });
+    // 1. Masquer [PRÉNOM NOM] (On remonte un peu le bas pour ne pas couper le signe infini)
+    page.drawRectangle({ x: 80, y: 495, width: 440, height: 58, color: bgColor });
     
-    // 2. Masquer le Thème ("Motivation, Démotivation...")
-    page.drawRectangle({ x: 80, y: 390, width: 440, height: 75, color: bgColor });
+    // 2. Masquer le Thème (On augmente la hauteur pour cacher les miettes en haut)
+    page.drawRectangle({ x: 80, y: 385, width: 440, height: 85, color: bgColor });
     
-    // 3. Masquer la Date (18 avril 2026) (prolongé vers le bas pour cacher les bords)
-    page.drawRectangle({ x: 190, y: 185, width: 130, height: 40, color: bgColor });
+    // 3. Masquer la Date (On descend le haut de la boite pour ne pas cacher la ligne déco)
+    page.drawRectangle({ x: 190, y: 178, width: 130, height: 35, color: bgColor });
     
-    // 4. Masquer [VILLE]
-    page.drawRectangle({ x: 350, y: 185, width: 130, height: 40, color: bgColor });
+    // 4. Masquer [VILLE] (On abaisse, on augmente la largeur pour faire respirer le texte)
+    page.drawRectangle({ x: 335, y: 178, width: 160, height: 35, color: bgColor });
+
+    // 5. Masquer le faux Code QR en bas à gauche et sa mention "CERT-2026-004"
+    page.drawRectangle({ x: 50, y: 55, width: 100, height: 110, color: bgColor });
     
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
@@ -117,13 +121,14 @@ export class CertificatesService {
     const name = (ticket.full_name || ticket.name || "Participant").toUpperCase();
     const theme = event.title;
     const dateStr = new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const ticketRef = `REF: ${ticket.id.split('-')[0].toUpperCase()}`;
 
     // 1. [PRÉNOM NOM] - Centré horizontalement
     const nameSize = 34;
     const nameWidth = fontBold.widthOfTextAtSize(name, nameSize);
     page.drawText(name, {
       x: (width - nameWidth) / 2,
-      y: 510,
+      y: 508, // On réajuste pour bien chuter dans la boite
       size: nameSize,
       font: fontBold,
       color: rgb(0.2, 0.08, 0.05), // #32140c
@@ -131,7 +136,7 @@ export class CertificatesService {
 
     // 2. Thème - Centré avec gestion des textes longs (retour à la ligne automatique)
     const themeSize = 20;
-    const maxThemeWidth = 480;
+    const maxThemeWidth = 460; // On réduit pour que ça rentre bien dans le cadre
     const fullThemeText = `"${theme}"`;
     const themeWords = fullThemeText.split(' ');
     
@@ -154,7 +159,7 @@ export class CertificatesService {
 
     const themeLineHeight = themeSize * 1.4;
     // Ajuster le Y initial si on a plusieurs lignes pour rester centré dans la zone beige
-    let themeStartY = 420;
+    let themeStartY = 422;
     if (themeLines.length > 1) {
        themeStartY += ((themeLines.length - 1) * themeLineHeight) / 2;
     }
@@ -173,7 +178,7 @@ export class CertificatesService {
     // 3. Date
     page.drawText(dateStr, {
       x: 195, 
-      y: 200,
+      y: 193, // Ajourné vers le bas
       size: 14,
       font: fontBold,
       color: rgb(0.2, 0.08, 0.05),
@@ -182,7 +187,7 @@ export class CertificatesService {
     // 4. Lieu (Ville) - Avec gestion des longs textes
     if (event.location) {
         const locationSize = 13;
-        const maxLocationWidth = 145; // Limite de largeur pour le bloc lieu
+        const maxLocationWidth = 155; // Limite de largeur augmentée
         const locWords = event.location.split(' ');
         
         let locLines: string[] = [];
@@ -201,20 +206,51 @@ export class CertificatesService {
         if (curLocLine.length > 0) locLines.push(curLocLine);
 
         const locLineHeight = locationSize * 1.3;
-        let locStartY = 200;
+        let locStartY = 193; // Ajourné vers le bas
         if (locLines.length > 1) {
             locStartY += ((locLines.length - 1) * locLineHeight) / 2;
         }
 
         locLines.forEach((line, index) => {
             page.drawText(line, {
-                x: 355,
+                x: 340, // Reculé un peu à gauche
                 y: locStartY - (index * locLineHeight),
                 size: locationSize,
                 font: fontBold,
                 color: rgb(0.2, 0.08, 0.05),
             });
         });
+    }
+
+    // 5. Code QR Unique
+    try {
+        const qrUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/verify/${ticket.id}` : `https://nfl-ga.vercel.app/verify/${ticket.id}`;
+        // Génération du QR Code sous forme de buffer PNG
+        const qrBuffer = await qrcode.toBuffer(qrUrl, { 
+            margin: 1, 
+            color: { dark: '#32140c', light: '#fefcf6' },
+            width: 80 
+        });
+        const qrImage = await pdfDoc.embedPng(qrBuffer);
+        
+        page.drawImage(qrImage, {
+            x: 60,
+            y: 75,
+            width: 75,
+            height: 75
+        });
+
+        // Texte sous le QR code (Reference de certificat unique)
+        const refWidth = fontBold.widthOfTextAtSize(ticketRef, 10);
+        page.drawText(ticketRef, {
+            x: 60 + (75 - refWidth) / 2,
+            y: 60,
+            size: 10,
+            font: fontBold,
+            color: rgb(0.2, 0.08, 0.05)
+        });
+    } catch (e) {
+        this.logger.error("Erreur de génération QR Code: " + e.message);
     }
 
     return await pdfDoc.save();
