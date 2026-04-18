@@ -107,8 +107,8 @@ export class CertificatesService {
     // 4. Masquer [VILLE] (Ramené vers la droite pour ne pas cacher l'icône de localisation)
     page.drawRectangle({ x: 350, y: 178, width: 145, height: 35, color: bgColor });
 
-    // 5. Masquer le faux Code QR (Rabaissé pour ne pas toucher l'icône calendrier/date)
-    page.drawRectangle({ x: 75, y: 55, width: 95, height: 115, color: bgColor });
+    // 5. Masquer le faux Code QR (Rabaissé pour ne pas toucher l'icône calendrier/date, relevé du bas pour la ligne déco)
+    page.drawRectangle({ x: 75, y: 60, width: 95, height: 110, color: bgColor });
     
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
@@ -246,7 +246,7 @@ export class CertificatesService {
         
         page.drawImage(qrImage, {
             x: 85, // Encore décalé vers la droite
-            y: 88, // Légèrement remonté
+            y: 91, // Légèrement remonté
             width: 75,
             height: 75
         });
@@ -255,7 +255,7 @@ export class CertificatesService {
         const refWidth = fontBold.widthOfTextAtSize(ticketRef, 10);
         page.drawText(ticketRef, {
             x: 85 + (75 - refWidth) / 2, // Centré sous le QR
-            y: 73, // Légèrement remonté
+            y: 76, // Légèrement remonté
             size: 10,
             font: fontBold,
             color: rgb(0.2, 0.08, 0.05)
