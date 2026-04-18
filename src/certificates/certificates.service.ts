@@ -91,19 +91,20 @@ export class CertificatesService {
     // -----------------------------------------------------
     // MASQUAGE DU TEXTE FICTIF (Draw rectangles to hide template text)
     // -----------------------------------------------------
-    const bgColor = rgb(0.99, 0.98, 0.96); // Couleur approximative du fond (beige très clair)
+    // Ajustement de la couleur pour coller parfaitement au fond parchemin du certificat (#FDFBF2 environ)
+    const bgColor = rgb(0.992, 0.984, 0.949); 
     
-    // 1. Masquer [PRÉNOM NOM]
-    page.drawRectangle({ x: 50, y: 490, width: 500, height: 65, color: bgColor });
+    // 1. Masquer [PRÉNOM NOM] (réduit sur les bords)
+    page.drawRectangle({ x: 80, y: 490, width: 440, height: 65, color: bgColor });
     
     // 2. Masquer le Thème ("Motivation, Démotivation...")
-    page.drawRectangle({ x: 50, y: 390, width: 500, height: 75, color: bgColor });
+    page.drawRectangle({ x: 80, y: 390, width: 440, height: 75, color: bgColor });
     
-    // 3. Masquer la Date (18 avril 2026)
-    page.drawRectangle({ x: 190, y: 190, width: 130, height: 30, color: bgColor });
+    // 3. Masquer la Date (18 avril 2026) (prolongé vers le bas pour cacher les bords)
+    page.drawRectangle({ x: 190, y: 185, width: 130, height: 40, color: bgColor });
     
     // 4. Masquer [VILLE]
-    page.drawRectangle({ x: 350, y: 190, width: 130, height: 30, color: bgColor });
+    page.drawRectangle({ x: 350, y: 185, width: 130, height: 40, color: bgColor });
     
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
@@ -178,16 +179,41 @@ export class CertificatesService {
       color: rgb(0.2, 0.08, 0.05),
     });
 
-    // 4. Lieu (Ville)
+    // 4. Lieu (Ville) - Avec gestion des longs textes
     if (event.location) {
-        // Prendre juste le nom principal de la ville si c'est long
-        const locationShort = event.location.split(',')[0];
-        page.drawText(locationShort, {
-            x: 360,
-            y: 200,
-            size: 14,
-            font: fontBold,
-            color: rgb(0.2, 0.08, 0.05),
+        const locationSize = 13;
+        const maxLocationWidth = 145; // Limite de largeur pour le bloc lieu
+        const locWords = event.location.split(' ');
+        
+        let locLines: string[] = [];
+        let curLocLine = '';
+
+        for (const w of locWords) {
+            const tLine = curLocLine.length === 0 ? w : curLocLine + ' ' + w;
+            const tWidth = fontBold.widthOfTextAtSize(tLine, locationSize);
+            if (tWidth > maxLocationWidth && curLocLine.length > 0) {
+               locLines.push(curLocLine);
+               curLocLine = w;
+            } else {
+               curLocLine = tLine;
+            }
+        }
+        if (curLocLine.length > 0) locLines.push(curLocLine);
+
+        const locLineHeight = locationSize * 1.3;
+        let locStartY = 200;
+        if (locLines.length > 1) {
+            locStartY += ((locLines.length - 1) * locLineHeight) / 2;
+        }
+
+        locLines.forEach((line, index) => {
+            page.drawText(line, {
+                x: 355,
+                y: locStartY - (index * locLineHeight),
+                size: locationSize,
+                font: fontBold,
+                color: rgb(0.2, 0.08, 0.05),
+            });
         });
     }
 
