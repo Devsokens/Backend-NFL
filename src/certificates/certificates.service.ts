@@ -95,21 +95,15 @@ export class CertificatesService {
     // Retour à la couleur d'origine "parchemin" qui se fond le mieux au centre (#FDFBF2)
     const bgColor = rgb(0.992, 0.984, 0.949); 
     
-    // 1. Masquer [PRÉNOM NOM] (On remonte un peu le bas pour ne pas couper le signe infini)
-    page.drawRectangle({ x: 80, y: 495, width: 440, height: 58, color: bgColor });
-    
-    // 2. Masquer le Thème (On augmente la hauteur pour cacher les miettes en haut)
+    // Masquer le Thème (on réinstaure ce gommage comme demandé)
     page.drawRectangle({ x: 80, y: 385, width: 440, height: 85, color: bgColor });
     
-    // 3. Masquer la Date (On descend le haut de la boite pour ne pas cacher la ligne déco)
-    page.drawRectangle({ x: 190, y: 178, width: 130, height: 35, color: bgColor });
+    // Masquer la Date au plus juste
+    page.drawRectangle({ x: 190, y: 180, width: 130, height: 32, color: bgColor });
     
-    // 4. Masquer [VILLE] (Ramené vers la droite pour ne pas cacher l'icône de localisation)
-    page.drawRectangle({ x: 350, y: 178, width: 145, height: 35, color: bgColor });
+    // (Le Lieu n'a plus de masque, et le Nom est désormais retiré du template d'origine)
+    // (Le QR Code sera imprimé sur sa zone prévue sans masque préalable)
 
-    // 5. Masquer le faux Code QR (Rabaissé pour ne pas toucher l'icône calendrier/date, relevé du bas pour la ligne déco)
-    page.drawRectangle({ x: 75, y: 64, width: 95, height: 106, color: bgColor });
-    
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
     // -----------------------------------------------------
@@ -135,7 +129,7 @@ export class CertificatesService {
     
     page.drawText(name, {
       x: (width - nameWidth) / 2,
-      y: 508, // On réajuste pour bien chuter dans la boite
+      y: 508, 
       size: nameSize,
       font: fontBold,
       color: rgb(0.2, 0.08, 0.05), // #32140c
@@ -143,7 +137,7 @@ export class CertificatesService {
 
     // 2. Thème - Centré avec gestion des textes longs (retour à la ligne automatique)
     const themeSize = 20;
-    const maxThemeWidth = 460; // On réduit pour que ça rentre bien dans le cadre
+    const maxThemeWidth = 460;
     const fullThemeText = `"${theme}"`;
     const themeWords = fullThemeText.split(' ');
     
@@ -165,7 +159,6 @@ export class CertificatesService {
     }
 
     const themeLineHeight = themeSize * 1.4;
-    // Ajuster le Y initial si on a plusieurs lignes pour rester centré dans la zone beige
     let themeStartY = 422;
     if (themeLines.length > 1) {
        themeStartY += ((themeLines.length - 1) * themeLineHeight) / 2;
@@ -185,84 +178,14 @@ export class CertificatesService {
     // 3. Date
     page.drawText(dateStr, {
       x: 195, 
-      y: 193, // Ajourné vers le bas
+      y: 193,
       size: 14,
       font: fontBold,
       color: rgb(0.2, 0.08, 0.05),
     });
 
-    // 4. Lieu (Ville) - Avec gestion des longs textes et redimensionnement
-    if (event.location) {
-        let locationSize = 13;
-        // Si le lieu est long, réduire la police pour limiter les retours à la ligne excessifs
-        if (event.location.length > 30) locationSize = 11;
-        if (event.location.length > 50) locationSize = 9;
-        
-        const maxLocationWidth = 155; 
-        const locWords = event.location.split(' ');
-        
-        let locLines: string[] = [];
-        let curLocLine = '';
-
-        for (const w of locWords) {
-            const tLine = curLocLine.length === 0 ? w : curLocLine + ' ' + w;
-            const tWidth = fontBold.widthOfTextAtSize(tLine, locationSize);
-            if (tWidth > maxLocationWidth && curLocLine.length > 0) {
-               locLines.push(curLocLine);
-               curLocLine = w;
-            } else {
-               curLocLine = tLine;
-            }
-        }
-        if (curLocLine.length > 0) locLines.push(curLocLine);
-
-        const locLineHeight = locationSize * 1.3;
-        let locStartY = 193; // Ajourné vers le bas
-        if (locLines.length > 1) {
-            locStartY += ((locLines.length - 1) * locLineHeight) / 2;
-        }
-
-        locLines.forEach((line, index) => {
-            page.drawText(line, {
-                x: 355, // Ramené vers la droite
-                y: locStartY - (index * locLineHeight),
-                size: locationSize,
-                font: fontBold,
-                color: rgb(0.2, 0.08, 0.05),
-            });
-        });
-    }
-
-    // 5. Code QR Unique
-    try {
-        const qrUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/verify/${ticket.id}` : `https://nfl-ga.vercel.app/verify/${ticket.id}`;
-        // Génération du QR Code
-        const qrBuffer = await qrcode.toBuffer(qrUrl, { 
-            margin: 1, 
-            color: { dark: '#32140c', light: '#fdfbf2' },
-            width: 80 
-        });
-        const qrImage = await pdfDoc.embedPng(qrBuffer);
-        
-        page.drawImage(qrImage, {
-            x: 85, // Encore décalé vers la droite
-            y: 100, // Encore remonté
-            width: 75,
-            height: 75
-        });
-
-        // Texte sous le QR code (Reference de certificat unique)
-        const refWidth = fontBold.widthOfTextAtSize(ticketRef, 10);
-        page.drawText(ticketRef, {
-            x: 85 + (75 - refWidth) / 2, // Centré sous le QR
-            y: 85, // Encore remonté
-            size: 10,
-            font: fontBold,
-            color: rgb(0.2, 0.08, 0.05)
-        });
-    } catch (e) {
-        this.logger.error("Erreur de génération QR Code: " + e.message);
-    }
+    // Remarque : Nous ne dessinons plus dynamiquement le Lieu, puisque la balise native est déjà correcte sur le nouveau template.
+    // Remarque : Rendu du Code QR retiré à la demande du client.
 
     return await pdfDoc.save();
   }
