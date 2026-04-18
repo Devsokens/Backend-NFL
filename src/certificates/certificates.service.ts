@@ -108,7 +108,7 @@ export class CertificatesService {
     page.drawRectangle({ x: 350, y: 178, width: 145, height: 35, color: bgColor });
 
     // 5. Masquer le faux Code QR (Remonté et décalé davantage vers la droite)
-    page.drawRectangle({ x: 65, y: 75, width: 95, height: 110, color: bgColor });
+    page.drawRectangle({ x: 75, y: 75, width: 95, height: 110, color: bgColor });
     
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
@@ -245,7 +245,7 @@ export class CertificatesService {
         const qrImage = await pdfDoc.embedPng(qrBuffer);
         
         page.drawImage(qrImage, {
-            x: 75, // Décalé vers la droite
+            x: 85, // Encore décalé vers la droite
             y: 95, // Remonté
             width: 75,
             height: 75
@@ -254,7 +254,7 @@ export class CertificatesService {
         // Texte sous le QR code (Reference de certificat unique)
         const refWidth = fontBold.widthOfTextAtSize(ticketRef, 10);
         page.drawText(ticketRef, {
-            x: 75 + (75 - refWidth) / 2, // Centré sous le QR
+            x: 85 + (75 - refWidth) / 2, // Centré sous le QR
             y: 80, // Remonté en proportion
             size: 10,
             font: fontBold,
