@@ -92,8 +92,8 @@ export class CertificatesService {
     // -----------------------------------------------------
     // MASQUAGE DU TEXTE FICTIF (Draw rectangles to hide template text)
     // -----------------------------------------------------
-    // Nouvelle tentative de couleur pour coller parfaitement au fond (#FEFCF6 environ)
-    const bgColor = rgb(0.996, 0.988, 0.965); 
+    // Utilisation du blanc pur. Très souvent, les certificats ont un fond 100% blanc au centre.
+    const bgColor = rgb(1, 1, 1); 
     
     // 1. Masquer [PRÉNOM NOM] (On remonte un peu le bas pour ne pas couper le signe infini)
     page.drawRectangle({ x: 80, y: 495, width: 440, height: 58, color: bgColor });
@@ -104,11 +104,11 @@ export class CertificatesService {
     // 3. Masquer la Date (On descend le haut de la boite pour ne pas cacher la ligne déco)
     page.drawRectangle({ x: 190, y: 178, width: 130, height: 35, color: bgColor });
     
-    // 4. Masquer [VILLE] (On abaisse, on augmente la largeur pour faire respirer le texte)
-    page.drawRectangle({ x: 335, y: 178, width: 160, height: 35, color: bgColor });
+    // 4. Masquer [VILLE] (Ramené vers la droite pour ne pas cacher l'icône de localisation)
+    page.drawRectangle({ x: 350, y: 178, width: 145, height: 35, color: bgColor });
 
-    // 5. Masquer le faux Code QR en bas à gauche et sa mention "CERT-2026-004"
-    page.drawRectangle({ x: 50, y: 55, width: 100, height: 110, color: bgColor });
+    // 5. Masquer le faux Code QR (Remonté légèrement et décalé vers la droite)
+    page.drawRectangle({ x: 55, y: 65, width: 95, height: 110, color: bgColor });
     
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
@@ -187,7 +187,7 @@ export class CertificatesService {
     // 4. Lieu (Ville) - Avec gestion des longs textes
     if (event.location) {
         const locationSize = 13;
-        const maxLocationWidth = 155; // Limite de largeur augmentée
+        const maxLocationWidth = 145; 
         const locWords = event.location.split(' ');
         
         let locLines: string[] = [];
@@ -213,7 +213,7 @@ export class CertificatesService {
 
         locLines.forEach((line, index) => {
             page.drawText(line, {
-                x: 340, // Reculé un peu à gauche
+                x: 355, // Ramené vers la droite
                 y: locStartY - (index * locLineHeight),
                 size: locationSize,
                 font: fontBold,
@@ -225,17 +225,17 @@ export class CertificatesService {
     // 5. Code QR Unique
     try {
         const qrUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/verify/${ticket.id}` : `https://nfl-ga.vercel.app/verify/${ticket.id}`;
-        // Génération du QR Code sous forme de buffer PNG
+        // Génération du QR Code
         const qrBuffer = await qrcode.toBuffer(qrUrl, { 
             margin: 1, 
-            color: { dark: '#32140c', light: '#fefcf6' },
+            color: { dark: '#32140c', light: '#ffffff' },
             width: 80 
         });
         const qrImage = await pdfDoc.embedPng(qrBuffer);
         
         page.drawImage(qrImage, {
-            x: 60,
-            y: 75,
+            x: 65, // Décalé vers la droite
+            y: 80, // Remonté
             width: 75,
             height: 75
         });
@@ -243,8 +243,8 @@ export class CertificatesService {
         // Texte sous le QR code (Reference de certificat unique)
         const refWidth = fontBold.widthOfTextAtSize(ticketRef, 10);
         page.drawText(ticketRef, {
-            x: 60 + (75 - refWidth) / 2,
-            y: 60,
+            x: 65 + (75 - refWidth) / 2,
+            y: 65, // Remonté en proportion
             size: 10,
             font: fontBold,
             color: rgb(0.2, 0.08, 0.05)
