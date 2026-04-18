@@ -76,12 +76,13 @@ export class CertificatesService {
   }
 
   private async createCertificatePdf(event: any, ticket: any, templateBytes: Buffer) {
-    // On crée un PDF au format A4 approximatif (basé sur le ratio de l'image si possible)
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([600, 850]); 
-    const { width, height } = page.getSize();
-
     const image = await pdfDoc.embedPng(templateBytes);
+    
+    // On s'adapte à la taille exacte de l'image (garantit le bon format Paysage/Portrait)
+    const { width, height } = image.scale(1);
+    const page = pdfDoc.addPage([width, height]); 
+
     page.drawImage(image, {
       x: 0,
       y: 0,
@@ -90,19 +91,15 @@ export class CertificatesService {
     });
 
     // -----------------------------------------------------
-    // MASQUAGE DU TEXTE FICTIF (Draw rectangles to hide template text)
+    // MASQUAGE DU TEXTE FICTIF
     // -----------------------------------------------------
-    // Retour à la couleur d'origine "parchemin" qui se fond le mieux au centre (#FDFBF2)
     const bgColor = rgb(0.992, 0.984, 0.949); 
     
-    // Masquer le Thème (on réinstaure ce gommage comme demandé)
-    page.drawRectangle({ x: 80, y: 385, width: 440, height: 85, color: bgColor });
+    // Le Thème est environ au centre de la page en hauteur
+    page.drawRectangle({ x: width * 0.15, y: height * 0.45, width: width * 0.7, height: height * 0.12, color: bgColor });
     
-    // Masquer la Date au plus juste
-    page.drawRectangle({ x: 190, y: 180, width: 130, height: 32, color: bgColor });
-    
-    // (Le Lieu n'a plus de masque, et le Nom est désormais retiré du template d'origine)
-    // (Le QR Code sera imprimé sur sa zone prévue sans masque préalable)
+    // La Date: on suppose qu'elle est en bas à gauche (~25% X, ~20% Y)
+    page.drawRectangle({ x: width * 0.20, y: height * 0.18, width: 150, height: 40, color: bgColor });
 
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
@@ -115,29 +112,28 @@ export class CertificatesService {
     const name = (ticket.full_name || ticket.name || "Participant").toUpperCase();
     const theme = event.title;
     const dateStr = new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-    const ticketRef = `REF: ${ticket.id.split('-')[0].toUpperCase()}`;
 
-    // 1. [PRÉNOM NOM] - Centré horizontalement avec redimensionnement automatique si trop long
-    let nameSize = 34;
+    // 1. [PRÉNOM NOM] - Centré Horizontalement, plus haut sur la page (Y ~ 60%)
+    let nameSize = Math.max(34, width * 0.04);
     let nameWidth = fontBold.widthOfTextAtSize(name, nameSize);
     
-    // Réduire la taille de police jusqu'à ce que le nom rentre dans 420 pixels (pour éviter le débordement)
-    while (nameWidth > 420 && nameSize > 14) {
+    const maxNameWidth = width * 0.7; // 70% de la largeur max
+    while (nameWidth > maxNameWidth && nameSize > 14) {
       nameSize -= 2;
       nameWidth = fontBold.widthOfTextAtSize(name, nameSize);
     }
     
     page.drawText(name, {
       x: (width - nameWidth) / 2,
-      y: 508, 
+      y: height * 0.60, 
       size: nameSize,
       font: fontBold,
       color: rgb(0.2, 0.08, 0.05), // #32140c
     });
 
-    // 2. Thème - Centré avec gestion des textes longs (retour à la ligne automatique)
-    const themeSize = 20;
-    const maxThemeWidth = 460;
+    // 2. Thème - Centré bas avec l'algorithme multiligne (Y ~ 48%)
+    const themeSize = Math.max(20, width * 0.025);
+    const maxThemeWidth = width * 0.8;
     const fullThemeText = `"${theme}"`;
     const themeWords = fullThemeText.split(' ');
     
@@ -159,7 +155,7 @@ export class CertificatesService {
     }
 
     const themeLineHeight = themeSize * 1.4;
-    let themeStartY = 422;
+    let themeStartY = height * 0.50; // Approximatif
     if (themeLines.length > 1) {
        themeStartY += ((themeLines.length - 1) * themeLineHeight) / 2;
     }
@@ -177,14 +173,14 @@ export class CertificatesService {
 
     // 3. Date
     page.drawText(dateStr, {
-      x: 195, 
-      y: 193,
-      size: 14,
+      x: width * 0.22, // Légèrement décalé à droite dans son masque
+      y: height * 0.20,
+      size: Math.max(14, width * 0.02),
       font: fontBold,
       color: rgb(0.2, 0.08, 0.05),
     });
 
-    // Remarque : Nous ne dessinons plus dynamiquement le Lieu, puisque la balise native est déjà correcte sur le nouveau template.
+    // Remarque : Le Lieu est désactivé et le QR Code supprimé.
     // Remarque : Rendu du Code QR retiré à la demande du client.
 
     return await pdfDoc.save();
