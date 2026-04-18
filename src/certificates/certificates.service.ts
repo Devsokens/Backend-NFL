@@ -92,8 +92,8 @@ export class CertificatesService {
     // -----------------------------------------------------
     // MASQUAGE DU TEXTE FICTIF (Draw rectangles to hide template text)
     // -----------------------------------------------------
-    // Utilisation du blanc pur. Très souvent, les certificats ont un fond 100% blanc au centre.
-    const bgColor = rgb(1, 1, 1); 
+    // Retour à la couleur d'origine "parchemin" qui se fond le mieux au centre (#FDFBF2)
+    const bgColor = rgb(0.992, 0.984, 0.949); 
     
     // 1. Masquer [PRÉNOM NOM] (On remonte un peu le bas pour ne pas couper le signe infini)
     page.drawRectangle({ x: 80, y: 495, width: 440, height: 58, color: bgColor });
@@ -107,8 +107,8 @@ export class CertificatesService {
     // 4. Masquer [VILLE] (Ramené vers la droite pour ne pas cacher l'icône de localisation)
     page.drawRectangle({ x: 350, y: 178, width: 145, height: 35, color: bgColor });
 
-    // 5. Masquer le faux Code QR (Remonté légèrement et décalé vers la droite)
-    page.drawRectangle({ x: 55, y: 65, width: 95, height: 110, color: bgColor });
+    // 5. Masquer le faux Code QR (Remonté et décalé davantage vers la droite)
+    page.drawRectangle({ x: 65, y: 75, width: 95, height: 110, color: bgColor });
     
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
@@ -123,9 +123,16 @@ export class CertificatesService {
     const dateStr = new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     const ticketRef = `REF: ${ticket.id.split('-')[0].toUpperCase()}`;
 
-    // 1. [PRÉNOM NOM] - Centré horizontalement
-    const nameSize = 34;
-    const nameWidth = fontBold.widthOfTextAtSize(name, nameSize);
+    // 1. [PRÉNOM NOM] - Centré horizontalement avec redimensionnement automatique si trop long
+    let nameSize = 34;
+    let nameWidth = fontBold.widthOfTextAtSize(name, nameSize);
+    
+    // Réduire la taille de police jusqu'à ce que le nom rentre dans 420 pixels (pour éviter le débordement)
+    while (nameWidth > 420 && nameSize > 14) {
+      nameSize -= 2;
+      nameWidth = fontBold.widthOfTextAtSize(name, nameSize);
+    }
+    
     page.drawText(name, {
       x: (width - nameWidth) / 2,
       y: 508, // On réajuste pour bien chuter dans la boite
@@ -184,10 +191,14 @@ export class CertificatesService {
       color: rgb(0.2, 0.08, 0.05),
     });
 
-    // 4. Lieu (Ville) - Avec gestion des longs textes
+    // 4. Lieu (Ville) - Avec gestion des longs textes et redimensionnement
     if (event.location) {
-        const locationSize = 13;
-        const maxLocationWidth = 145; 
+        let locationSize = 13;
+        // Si le lieu est long, réduire la police pour limiter les retours à la ligne excessifs
+        if (event.location.length > 30) locationSize = 11;
+        if (event.location.length > 50) locationSize = 9;
+        
+        const maxLocationWidth = 155; 
         const locWords = event.location.split(' ');
         
         let locLines: string[] = [];
@@ -228,14 +239,14 @@ export class CertificatesService {
         // Génération du QR Code
         const qrBuffer = await qrcode.toBuffer(qrUrl, { 
             margin: 1, 
-            color: { dark: '#32140c', light: '#ffffff' },
+            color: { dark: '#32140c', light: '#fdfbf2' },
             width: 80 
         });
         const qrImage = await pdfDoc.embedPng(qrBuffer);
         
         page.drawImage(qrImage, {
-            x: 65, // Décalé vers la droite
-            y: 80, // Remonté
+            x: 75, // Décalé vers la droite
+            y: 95, // Remonté
             width: 75,
             height: 75
         });
@@ -243,8 +254,8 @@ export class CertificatesService {
         // Texte sous le QR code (Reference de certificat unique)
         const refWidth = fontBold.widthOfTextAtSize(ticketRef, 10);
         page.drawText(ticketRef, {
-            x: 65 + (75 - refWidth) / 2,
-            y: 65, // Remonté en proportion
+            x: 75 + (75 - refWidth) / 2, // Centré sous le QR
+            y: 80, // Remonté en proportion
             size: 10,
             font: fontBold,
             color: rgb(0.2, 0.08, 0.05)
