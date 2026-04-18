@@ -246,7 +246,7 @@ export class CertificatesService {
         
         page.drawImage(qrImage, {
             x: 85, // Encore décalé vers la droite
-            y: 95, // Remonté
+            y: 85, // Légèrement redescendu pour s'éloigner de l'icône calendrier
             width: 75,
             height: 75
         });
@@ -255,7 +255,7 @@ export class CertificatesService {
         const refWidth = fontBold.widthOfTextAtSize(ticketRef, 10);
         page.drawText(ticketRef, {
             x: 85 + (75 - refWidth) / 2, // Centré sous le QR
-            y: 80, // Remonté en proportion
+            y: 70, // Redescendu également
             size: 10,
             font: fontBold,
             color: rgb(0.2, 0.08, 0.05)
