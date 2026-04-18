@@ -107,8 +107,8 @@ export class CertificatesService {
     // 4. Masquer [VILLE] (Ramené vers la droite pour ne pas cacher l'icône de localisation)
     page.drawRectangle({ x: 350, y: 178, width: 145, height: 35, color: bgColor });
 
-    // 5. Masquer le faux Code QR (Remonté et décalé davantage vers la droite)
-    page.drawRectangle({ x: 75, y: 75, width: 95, height: 110, color: bgColor });
+    // 5. Masquer le faux Code QR (Rabaissé pour ne pas toucher l'icône calendrier/date)
+    page.drawRectangle({ x: 75, y: 55, width: 95, height: 115, color: bgColor });
     
     // -----------------------------------------------------
     // ÉCRITURE DU TEXTE DYNAMIQUE
