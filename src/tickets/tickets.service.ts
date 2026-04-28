@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
+import { LOGO_BASE64 } from '../assets/logo-constant';
 
 @Injectable()
 export class TicketsService {
@@ -33,7 +34,7 @@ export class TicketsService {
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
             <div style="background: #32140c; padding: 24px; text-align: center;">
-              <img src="data:image/png;base64,${fs.readFileSync(path.resolve(process.cwd(), 'src/assets/logo.png')).toString('base64')}" alt="NFL Logo" style="max-height: 80px; display: block; margin: 0 auto;" />
+              <img src="data:image/png;base64,${LOGO_BASE64}" alt="NFL Logo" style="max-height: 80px; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 32px;">
               <h2 style="color: #32140c;">Bonjour ${fullName}</h2>

@@ -3,8 +3,7 @@ import { SupabaseService } from '../supabase.service';
 import { SubscribeNewsletterDto } from './dto/newsletter.dto';
 import { SendManualNewsletterDto } from './dto/send-newsletter.dto';
 import axios from 'axios';
-import * as fs from 'fs';
-import * as path from 'path';
+import { LOGO_BASE64 } from '../assets/logo-constant';
 
 @Injectable()
 export class NewsletterService {
@@ -98,7 +97,7 @@ export class NewsletterService {
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
               <div style="background: #32140c; padding: 32px; text-align: center;">
-                <img src="data:image/png;base64,${fs.readFileSync(path.resolve(process.cwd(), 'src/assets/logo.png')).toString('base64')}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
+                <img src="data:image/png;base64,${LOGO_BASE64}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
               </div>
               <div style="padding: 32px;">
                 ${content}
@@ -192,7 +191,7 @@ export class NewsletterService {
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
               <div style="background: #32140c; padding: 32px; text-align: center;">
-                <img src="data:image/png;base64,${fs.readFileSync(path.resolve(process.cwd(), 'src/assets/logo.png')).toString('base64')}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
+                <img src="data:image/png;base64,${LOGO_BASE64}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
               </div>
               <div style="padding: 32px;">
                 <h2 style="color: #32140c;">Découvrez notre nouvel événement !</h2>
@@ -256,7 +255,7 @@ export class NewsletterService {
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
             <div style="background: #32140c; padding: 24px; text-align: center;">
-              <img src="data:image/png;base64,${fs.readFileSync(path.resolve(process.cwd(), 'src/assets/logo.png')).toString('base64')}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
+              <img src="data:image/png;base64,${LOGO_BASE64}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 32px;">
               <h2 style="color: #32140c;">Bienvenue !</h2>
