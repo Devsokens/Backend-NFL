@@ -144,7 +144,7 @@ export class CertificatesService {
       htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
           <div style="background: #32140c; padding: 32px; text-align: center;">
-            <img src="data:image/png;base64,${LOGO_BASE64}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
+            <img src="cid:logo" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
           </div>
           <div style="padding: 32px; line-height: 1.6; color: #333;">
             <h2 style="color: #32140c;">Félicitations pour votre participation !</h2>
@@ -163,6 +163,11 @@ export class CertificatesService {
         </div>
       `,
       attachment: [
+        {
+          content: LOGO_BASE64,
+          name: "logo.png",
+          contentId: "logo"
+        },
         {
           content: base64Pdf,
           name: `Certificat-${ticket.full_name.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`

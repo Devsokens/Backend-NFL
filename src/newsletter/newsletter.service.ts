@@ -97,7 +97,7 @@ export class NewsletterService {
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
               <div style="background: #32140c; padding: 32px; text-align: center;">
-                <img src="data:image/png;base64,${LOGO_BASE64}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
+                <img src="cid:logo" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
               </div>
               <div style="padding: 32px;">
                 ${content}
@@ -108,14 +108,17 @@ export class NewsletterService {
               </div>
             </div>
           `,
-          ...(attachmentUrl && {
-            attachment: [
-              {
-                url: attachmentUrl,
-                name: attachmentName || "document.pdf"
-              }
-            ]
-          })
+          attachment: [
+            {
+              content: LOGO_BASE64,
+              name: "logo.png",
+              contentId: "logo"
+            },
+            ...(attachmentUrl ? [{
+              url: attachmentUrl,
+              name: attachmentName || "document.pdf"
+            }] : [])
+          ]
         }, {
           headers: {
             'accept': 'application/json',
@@ -191,7 +194,7 @@ export class NewsletterService {
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
               <div style="background: #32140c; padding: 32px; text-align: center;">
-                <img src="data:image/png;base64,${LOGO_BASE64}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
+                <img src="cid:logo" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
               </div>
               <div style="padding: 32px;">
                 <h2 style="color: #32140c;">Découvrez notre nouvel événement !</h2>
@@ -211,7 +214,14 @@ export class NewsletterService {
                 <p style="color: #999; font-size: 12px; margin-top: 32px; text-align: center;">Vous recevez cet email car vous êtes abonné à la newsletter NFL.</p>
               </div>
             </div>
-          `
+          `,
+          attachment: [
+            {
+              content: LOGO_BASE64,
+              name: "logo.png",
+              contentId: "logo"
+            }
+          ]
         }, {
           headers: {
             'accept': 'application/json',
@@ -255,7 +265,7 @@ export class NewsletterService {
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
             <div style="background: #32140c; padding: 24px; text-align: center;">
-              <img src="data:image/png;base64,${LOGO_BASE64}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
+              <img src="cid:logo" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 32px;">
               <h2 style="color: #32140c;">Bienvenue !</h2>
@@ -263,7 +273,14 @@ export class NewsletterService {
               <p style="color: #999; font-size: 12px; margin-top: 32px;">Pour vous désabonner, répondez à cet email avec "Désabonnement".</p>
             </div>
           </div>
-        `
+        `,
+        attachment: [
+          {
+            content: LOGO_BASE64,
+            name: "logo.png",
+            contentId: "logo"
+          }
+        ]
       }, {
         headers: {
           'accept': 'application/json',

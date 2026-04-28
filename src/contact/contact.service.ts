@@ -73,7 +73,8 @@ export class ContactService {
             </div>
             <p style="margin-top: 20px; font-size: 12px; color: #888;">Message envoyé depuis le formulaire de contact du site NFL.</p>
           </div>
-        `
+        `,
+        attachment: [{ content: LOGO_BASE64, name: "logo.png", contentId: "logo" }]
       }, {
         headers: {
           'accept': 'application/json',
@@ -90,7 +91,7 @@ export class ContactService {
         htmlContent: `
           <div style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; color: #333;">
             <div style="text-align: center; background: #32140c; padding: 20px;">
-               <img src="data:image/png;base64,${LOGO_BASE64}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
+               <img src="cid:logo" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 20px; border: 1px solid #eee; border-top: none;">
               <h2>Bonjour ${dto.name},</h2>
@@ -100,7 +101,8 @@ export class ContactService {
               <p>Cordialement,<br><strong>L'équipe NFL</strong></p>
             </div>
           </div>
-        `
+        `,
+        attachment: [{ content: LOGO_BASE64, name: "logo.png", contentId: "logo" }]
       }, {
         headers: {
           'accept': 'application/json',
