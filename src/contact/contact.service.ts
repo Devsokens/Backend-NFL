@@ -3,6 +3,8 @@ import { SupabaseService } from '../supabase.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import * as nodemailer from 'nodemailer';
 import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class ContactService {
@@ -89,7 +91,7 @@ export class ContactService {
         htmlContent: `
           <div style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; color: #333;">
             <div style="text-align: center; background: #32140c; padding: 20px;">
-               <h1 style="color: #c79d4f; margin: 0;">NFL Courtier & Service</h1>
+               <img src="data:image/png;base64,${fs.readFileSync(path.resolve(process.cwd(), 'src/assets/logo.png')).toString('base64')}" alt="NFL Logo" style="max-height: 70px; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 20px; border: 1px solid #eee; border-top: none;">
               <h2>Bonjour ${dto.name},</h2>
