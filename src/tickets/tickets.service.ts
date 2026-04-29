@@ -33,8 +33,8 @@ export class TicketsService {
         subject: `Votre billet — ${eventTitle}`,
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
-            <div style="background: #32140c; padding: 24px; text-align: center;">
-              <img src="cid:logo" alt="NFL Logo" style="max-height: 80px; display: block; margin: 0 auto;" />
+            <div style="background: #32140c; padding: 32px; text-align: center;">
+              <img src="${LOGO_BASE64}" alt="NFL Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 32px;">
               <h2 style="color: #32140c;">Bonjour ${fullName}</h2>
@@ -51,11 +51,6 @@ export class TicketsService {
           </div>
         `,
         attachment: [
-          {
-            content: LOGO_BASE64,
-            name: "logo.png",
-            contentId: "logo"
-          },
           {
             content: pdfBuffer.toString('base64'),
             name: `ticket-nfl-${ticketId}.pdf`
