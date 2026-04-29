@@ -34,7 +34,7 @@ export class TicketsService {
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
             <div style="background: #32140c; padding: 5px; text-align: center;">
-              <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 280px; height: auto; display: block; margin: 0 auto;" />
+              <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 32px;">
               <h2 style="color: #32140c;">Bonjour ${fullName}</h2>
