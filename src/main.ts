@@ -71,7 +71,7 @@ Utilisez \`POST /api/auth/login\` pour obtenir votre token.`,
     },
   });
 
-  const port = process.env.PORT || 3000;
+  const port = Number(process.env.PORT) || 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 NFL Backend running on port ${port}`);
   console.log(`📚 Swagger docs: http://localhost:${port}/docs`);
