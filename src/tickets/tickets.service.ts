@@ -33,8 +33,8 @@ export class TicketsService {
         subject: `Votre billet — ${eventTitle}`,
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
-            <div style="background: #32140c; padding: 32px; text-align: center;">
-              <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
+            <div style="background: #32140c; padding: 15px; text-align: center;">
+              <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 280px; height: auto; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 32px;">
               <h2 style="color: #32140c;">Bonjour ${fullName}</h2>

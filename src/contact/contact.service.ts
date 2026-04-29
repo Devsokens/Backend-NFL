@@ -89,8 +89,8 @@ export class ContactService {
         subject: 'Accusé de réception - Votre message pour NFL',
         htmlContent: `
           <div style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; color: #333;">
-            <div style="text-align: center; background: #32140c; padding: 20px;">
-               <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" />
+            <div style="text-align: center; background: #32140c; padding: 15px;">
+               <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 250px; height: auto; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 20px; border: 1px solid #eee; border-top: none;">
               <h2>Bonjour ${dto.name},</h2>
