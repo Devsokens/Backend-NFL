@@ -1,1 +1,1 @@
-export const LOGO_URL = 'https://oogosyyuisqbkxfeuuhv.supabase.co/storage/v1/object/public/events/logo-email.png';
+export const LOGO_URL = 'https://oogosyyuisqbkxfeuuhv.supabase.co/storage/v1/object/public/events/logo-zoomed.png';
