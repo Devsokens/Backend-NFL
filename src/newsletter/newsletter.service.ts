@@ -3,7 +3,7 @@ import { SupabaseService } from '../supabase.service';
 import { SubscribeNewsletterDto } from './dto/newsletter.dto';
 import { SendManualNewsletterDto } from './dto/send-newsletter.dto';
 import axios from 'axios';
-import { LOGO_BASE64 } from '../assets/logo-constant';
+import { LOGO_URL } from '../assets/logo-constant';
 
 @Injectable()
 export class NewsletterService {
@@ -97,7 +97,7 @@ export class NewsletterService {
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
               <div style="background: #32140c; padding: 32px; text-align: center;">
-                <img src="${LOGO_BASE64}" alt="NFL Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
+                <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
               </div>
               <div style="padding: 32px;">
                 ${content}
@@ -191,7 +191,7 @@ export class NewsletterService {
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
               <div style="background: #32140c; padding: 32px; text-align: center;">
-                <img src="${LOGO_BASE64}" alt="NFL Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
+                <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
               </div>
               <div style="padding: 32px;">
                 <h2 style="color: #32140c;">Découvrez notre nouvel événement !</h2>
@@ -255,7 +255,7 @@ export class NewsletterService {
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
             <div style="background: #32140c; padding: 32px; text-align: center;">
-              <img src="${LOGO_BASE64}" alt="NFL Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
+              <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 32px;">
               <h2 style="color: #32140c;">Bienvenue !</h2>

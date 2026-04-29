@@ -3,7 +3,7 @@ import { SupabaseService } from '../supabase.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import * as nodemailer from 'nodemailer';
 import axios from 'axios';
-import { LOGO_BASE64 } from '../assets/logo-constant';
+import { LOGO_URL } from '../assets/logo-constant';
 
 @Injectable()
 export class ContactService {
@@ -90,7 +90,7 @@ export class ContactService {
         htmlContent: `
           <div style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; color: #333;">
             <div style="text-align: center; background: #32140c; padding: 20px;">
-               <img src="${LOGO_BASE64}" alt="NFL Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" />
+               <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" />
             </div>
             <div style="padding: 20px; border: 1px solid #eee; border-top: none;">
               <h2>Bonjour ${dto.name},</h2>
