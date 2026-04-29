@@ -96,8 +96,8 @@ export class NewsletterService {
           subject: subject,
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
-              <div style="background: #32140c; padding: 5px; text-align: center;">
-                <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+              <div style="background: #32140c; padding: 15px 32px; text-align: left;">
+                <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 160px; height: auto; display: block;" />
               </div>
               <div style="padding: 32px;">
                 ${content}
@@ -190,8 +190,8 @@ export class NewsletterService {
           subject: `Nouvel Evénement : ${event.title}`,
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
-              <div style="background: #32140c; padding: 5px; text-align: center;">
-                <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+              <div style="background: #32140c; padding: 15px 32px; text-align: left;">
+                <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 160px; height: auto; display: block;" />
               </div>
               <div style="padding: 32px;">
                 <h2 style="color: #32140c;">Découvrez notre nouvel événement !</h2>
@@ -254,8 +254,8 @@ export class NewsletterService {
         subject: 'Bienvenue dans la Newsletter NFL',
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff; border: 1px solid #eee;">
-            <div style="background: #32140c; padding: 5px; text-align: center;">
-              <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+            <div style="background: #32140c; padding: 15px 32px; text-align: left;">
+              <img src="${LOGO_URL}" alt="NFL Logo" style="max-width: 160px; height: auto; display: block;" />
             </div>
             <div style="padding: 32px;">
               <h2 style="color: #32140c;">Bienvenue !</h2>
